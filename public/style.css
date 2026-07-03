@@ -87,12 +87,13 @@ body {
 }
 
 h1.title {
-  font-size: clamp(18px, 4.5vw, 26px);
-  letter-spacing: 8px;
+  font-size: clamp(13px, 3.2vw, 17px);
+  letter-spacing: 4px;
+  line-height: 1.25;
   text-transform: uppercase;
   font-weight: 400;
   color: var(--cream);
-  margin-top: 14px;
+  margin-top: 10px;
 }
 h1.title span { color: var(--sand); }
 

@@ -324,12 +324,22 @@
       return;
     }
     const email = emailEnabled ? ($("joinEmail").value || "").trim().toLowerCase() : "";
+    if (emailEnabled) {
+      if (!email) {
+        $("joinError").textContent = "Drop your email so we can reach you when it's time.";
+        return;
+      }
+      if (!/^\S+@\S+\.\S+$/.test(email)) {
+        $("joinError").textContent = "That email doesn't look right. Give it another go!";
+        return;
+      }
+    }
     setLoading($("joinBtn"), true);
     try {
       const j = await request("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(email ? { name, email } : { name }),
+        body: JSON.stringify(emailEnabled ? { name, email } : { name }),
       });
       token = j.token;
       localStorage.setItem("maroonToken", token);
@@ -431,6 +441,14 @@
     if (!token) return;
     const val = ($("emailInput").value || "").trim();
     $("emailMsg").textContent = "";
+    if (!val) {
+      $("emailMsg").textContent = "We need your email to ping you when it's time.";
+      return;
+    }
+    if (!/^\S+@\S+\.\S+$/.test(val.toLowerCase())) {
+      $("emailMsg").textContent = "That email doesn't look right. Give it another go!";
+      return;
+    }
     setLoading($("emailSaveBtn"), true);
     try {
       const r = await request("/api/contact/" + token, {
@@ -447,7 +465,7 @@
       updateEmailRow();
       $("emailMsg").textContent = r.email
         ? "Locked in! We'll hit your inbox when it's time."
-        : "Email cleared. You're browser-only for now.";
+        : "";
     } catch (e) {
       $("emailMsg").textContent = e.message || "That didn't save. Give it another go!";
     } finally {

@@ -369,6 +369,18 @@ app.post("/api/join", rateLimit(10), (req, res) => {
   const name = String(req.body.name || "").trim().slice(0, 60);
   if (!name) return res.status(400).json({ error: "Please enter your name." });
   if (state.guests.length >= 5000) return res.status(503).json({ error: "Queue is full." });
+  let email = null;
+  if (EMAIL_ENABLED) {
+    email = cleanEmail(req.body.email);
+    if (!email) {
+      const msg = String(req.body.email || "").trim()
+        ? "That email doesn't look right. Give it another go!"
+        : "Drop your email so we can reach you when it's time.";
+      return res.status(400).json({ error: msg });
+    }
+  } else {
+    email = cleanEmail(req.body.email);
+  }
   state.seq += 1;
   const guest = {
     id: crypto.randomUUID(),
@@ -379,8 +391,7 @@ app.post("/api/join", rateLimit(10), (req, res) => {
     joinedAt: Date.now(),
     calledAt: null,
     tgChat: null,
-    // Optional email; an invalid address never blocks the join, we just drop it.
-    email: cleanEmail(req.body.email),
+    email,
     pushSub: null,
     headsUpSent: false,
   };
@@ -419,12 +430,15 @@ app.post("/api/leave/:token", rateLimit(10), (req, res) => {
   res.json({ ok: true });
 });
 
-// Add, change or clear the guest's email after joining. Empty string clears.
+// Add or change the guest's email after joining.
 app.post("/api/contact/:token", rateLimit(10), (req, res) => {
   const guest = byToken(req.params.token);
   if (!guest) return res.status(404).json({ error: "Not found" });
   const raw = String(req.body.email || "").trim();
   if (!raw) {
+    if (EMAIL_ENABLED) {
+      return res.status(400).json({ error: "We need your email to ping you when it's time." });
+    }
     guest.email = null;
   } else {
     const email = cleanEmail(raw);
