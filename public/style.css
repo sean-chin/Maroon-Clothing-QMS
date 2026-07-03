@@ -464,6 +464,125 @@ button.loading { opacity: 0.65; pointer-events: none; }
   50% { box-shadow: 0 0 22px rgba(138, 18, 32, 0.55); }
 }
 
+/* ----- "never miss your call" channels ----- */
+.notify-card { text-align: left; }
+.notify-card .card-title { text-align: left; }
+.notify-lead {
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--cream-dim);
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.channel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+  border-top: 1px solid rgba(241, 235, 235, 0.1);
+}
+.channel-row.channel-stack { display: block; }
+.channel-stack .channel-info { margin-bottom: 10px; }
+
+.channel-info strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sand);
+}
+.channel-info p {
+  font-size: 14px;
+  color: var(--cream-dim);
+  font-style: italic;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.channel-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.channel-btn {
+  font-family: inherit;
+  font-stretch: condensed;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border-radius: 2px;
+  border: 1px solid var(--maroon-bright);
+  background: linear-gradient(180deg, var(--maroon-bright) 0%, var(--maroon) 100%);
+  color: var(--cream);
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(102, 8, 16, 0.35);
+  white-space: nowrap;
+}
+.channel-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #9a1828 0%, var(--maroon-bright) 100%);
+}
+.channel-btn.ghost {
+  background: transparent;
+  border-color: var(--hairline);
+  color: var(--cream-dim);
+  box-shadow: none;
+}
+.channel-btn.ghost:hover:not(:disabled) {
+  color: var(--cream);
+  border-color: var(--sand);
+  background: rgba(214, 192, 177, 0.08);
+}
+
+.channel-state {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  color: var(--cream-dim);
+  white-space: nowrap;
+}
+.channel-state.linked {
+  background: rgba(143, 188, 143, 0.12);
+  border-color: rgba(143, 188, 143, 0.5);
+  color: var(--success);
+}
+
+.email-linked {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.email-addr {
+  font-style: italic;
+  color: var(--sand);
+  font-size: 15px;
+  word-break: break-all;
+}
+
+.email-form { display: flex; gap: 8px; }
+.email-form input {
+  flex: 1;
+  margin-bottom: 0;
+  font-size: 16px;
+  padding: 10px 12px;
+}
+
+.channel-note {
+  font-size: 13px;
+  color: var(--cream-dim);
+  font-style: italic;
+  min-height: 18px;
+  margin-top: 8px;
+}
+
 footer {
   padding: 20px 14px 30px;
   font-size: 12px;
@@ -602,6 +721,21 @@ td.empty {
 .pill.waiting { color: var(--cream-dim); }
 .pill.called { background: var(--maroon); border-color: var(--maroon-bright); color: var(--cream); }
 .pill.inStore { background: rgba(143, 188, 143, 0.2); border-color: var(--success); color: var(--success); }
+
+/* Per-guest channel chips: shows staff who gets pinged remotely. */
+.chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid rgba(214, 192, 177, 0.4);
+  color: var(--sand);
+  vertical-align: middle;
+  white-space: nowrap;
+}
 
 td .row-btn {
   font-size: 11px;
