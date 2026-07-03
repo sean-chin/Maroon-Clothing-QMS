@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Queue Manager — Paint the Town Maroon</title>
+<title>Queue Manager | Paint the Town Maroon</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="assets/badge-oval.png">
 </head>
@@ -13,44 +13,45 @@
 <header class="hero admin-hero">
   <img class="admin-badge" src="assets/badge-oval.png" alt="Maroon">
   <h1 class="title">Queue <span>Manager</span></h1>
-  <p class="subtitle">Paint the Town Maroon &middot; 11–12 July</p>
+  <p class="subtitle">Paint the Town Maroon &middot; 11 to 12 July &middot; 1pm to 8pm</p>
   <hr class="rule">
 </header>
 
 <main>
   <section class="card" id="pinCard">
-    <h2 class="card-title">Staff access</h2>
+    <h2 class="card-title">Staff only</h2>
+    <p class="lead left">Enter your PIN to run the queue for the pop-up.</p>
     <label for="pin">Manager PIN</label>
-    <input type="password" id="pin" autocomplete="current-password" inputmode="numeric">
-    <button type="button" id="pinBtn">Unlock</button>
+    <input type="password" id="pin" autocomplete="current-password" inputmode="numeric" placeholder="enter PIN">
+    <button type="button" id="pinBtn">Open dashboard</button>
     <p class="error" id="pinError" role="alert"></p>
   </section>
 
   <div id="dash" hidden>
     <div class="dash-toolbar">
       <span class="queue-state open" id="queueState">Open</span>
-      <span class="live-indicator"><span class="conn-dot ok" id="refreshDot"></span> Auto-refresh</span>
+      <span class="live-indicator"><span class="conn-dot ok" id="refreshDot"></span> Live</span>
     </div>
 
     <div class="stats">
       <div class="stat">
-        <div class="n" id="sWaiting">—</div>
+        <div class="n" id="sWaiting">0</div>
         <div class="l">Waiting</div>
       </div>
       <div class="stat">
-        <div class="n" id="sCalled">—</div>
+        <div class="n" id="sCalled">0</div>
         <div class="l">Called</div>
       </div>
       <div class="stat highlight">
-        <div class="n" id="sInStore">—</div>
+        <div class="n" id="sInStore">0</div>
         <div class="l">In store</div>
       </div>
       <div class="stat">
-        <div class="n" id="sSlots">—</div>
+        <div class="n" id="sSlots">0</div>
         <div class="l">Slots free</div>
       </div>
       <div class="stat">
-        <div class="n" id="sTotal">—</div>
+        <div class="n" id="sTotal">0</div>
         <div class="l">Total joined</div>
       </div>
     </div>
@@ -66,19 +67,19 @@
     </section>
 
     <section class="card">
-      <h2 class="card-title left">Call guests</h2>
-      <p class="hint left" id="callHint">Loading…</p>
+      <h2 class="card-title left">Call people in</h2>
+      <p class="hint left" id="callHint">Loading</p>
       <div class="controls">
-        <label for="callCount">Call next</label>
+        <label for="callCount">How many</label>
         <input type="number" id="callCount" value="5" min="1" max="50" inputmode="numeric">
-        <button type="button" id="callBtn">Call &amp; show 5-min heads-up</button>
+        <button type="button" id="callBtn">Call next group</button>
         <button type="button" class="secondary warn" id="openBtn">Close new joins</button>
       </div>
-      <p class="hint left">Called guests see a <strong>~5 minute heads-up</strong> on their phone browser (no SMS/WhatsApp yet).</p>
+      <p class="hint left">Called guests get a <strong>5 minute heads-up</strong> on their phone browser.</p>
     </section>
 
     <section class="card table-card">
-      <h2 class="card-title left">Active queue</h2>
+      <h2 class="card-title left">Who's in the queue</h2>
       <div class="table-wrap">
         <table>
           <thead>

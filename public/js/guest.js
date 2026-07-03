@@ -10,10 +10,10 @@
   let failStreak = 0;
 
   const PHASE_LABELS = {
-    waiting: "Waiting",
-    almost: "Almost your turn",
-    yourTurn: "Your turn",
-    inStore: "In the store",
+    waiting: "In line",
+    almost: "Almost there",
+    yourTurn: "Walk in now",
+    inStore: "You're in",
     done: "Done",
   };
 
@@ -23,7 +23,7 @@
     if (!dot) return;
     dot.classList.toggle("ok", ok);
     dot.classList.toggle("bad", !ok);
-    if (label) label.textContent = ok ? "Live" : "Reconnecting…";
+    if (label) label.textContent = ok ? "Live" : "Reconnecting";
   }
 
   function setLoading(btn, loading) {
@@ -43,6 +43,12 @@
     $("inStorePanel").hidden = phase !== "inStore";
     $("advancePanel").hidden = phase !== "almost";
     $("turnPanel").hidden = phase !== "yourTurn";
+
+    const qNum = $("qNumber");
+    if (qNum) {
+      qNum.classList.toggle("queue-hot", phase === "yourTurn");
+      qNum.classList.toggle("queue-warm", phase === "almost");
+    }
 
     if (phase === "almost" && lastPhase !== "almost") {
       $("advancePanel").classList.add("pulse-once");
@@ -80,7 +86,7 @@
     $("joinError").textContent = "";
     const name = ($("name").value || "").trim();
     if (!name) {
-      $("joinError").textContent = "Please enter your name.";
+      $("joinError").textContent = "Drop your name so we know it's you.";
       return;
     }
     setLoading($("joinBtn"), true);
@@ -156,7 +162,7 @@
   }
 
   async function leaveQueue() {
-    if (!confirm("Leave the queue? You'll lose your spot.")) return;
+    if (!confirm("Leave the line? You'll lose your spot.")) return;
     setLoading($("leaveBtn"), true);
     try {
       await request("/api/leave/" + token, { method: "POST" });

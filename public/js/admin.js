@@ -80,8 +80,8 @@
       $("callCount").value = suggested;
       $("callHint").textContent =
         s.slotsAvailable > 0
-          ? `Up to ${s.slotsAvailable} spot${s.slotsAvailable === 1 ? "" : "s"} available — suggested call: ${suggested}`
-          : "Store at capacity — mark guests as left before calling more.";
+          ? `${s.slotsAvailable} spot${s.slotsAvailable === 1 ? "" : "s"} open. Suggested call: ${suggested}.`
+          : "Store is full. Mark guests as left before calling more.";
 
       $("openBtn").textContent = isOpen ? "Close new joins" : "Reopen queue";
       $("openBtn").classList.toggle("warn", isOpen);
@@ -100,7 +100,7 @@
       </tr>`
             )
             .join("")
-        : `<tr><td colspan="4" class="empty">No active guests in the queue.</td></tr>`;
+        : `<tr><td colspan="4" class="empty">Queue's empty right now.</td></tr>`;
 
       $("refreshDot").classList.add("ok");
     } catch (e) {
@@ -118,7 +118,7 @@
   async function guestAction(id, action) {
     try {
       await api("/api/admin/guest/" + id, { action });
-      toast("Guest updated");
+      toast("Updated");
       await refresh();
     } catch (e) {
       toast(e.message || "Action failed", "error");
@@ -185,7 +185,7 @@
       await refresh();
       refreshTimer = setInterval(refresh, 3000);
     } catch {
-      $("pinError").textContent = "Wrong PIN — try again.";
+      $("pinError").textContent = "Wrong PIN. Try again.";
     } finally {
       setLoading($("pinBtn"), false);
     }
