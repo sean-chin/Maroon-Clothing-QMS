@@ -2,13 +2,17 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<meta name="theme-color" content="#270707">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Paint the Town Maroon — Queue</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="assets/badge-oval.png">
 </head>
 <body>
+<div class="conn-strip" aria-live="polite">
+  <span class="conn-dot" id="connDot"></span>
+  <span id="connLabel">Connecting…</span>
+</div>
+
 <header class="hero">
   <div class="wordmark-wrap">
     <img src="assets/wordmark-white.png" alt="Maroon"
@@ -27,103 +31,70 @@
   <section class="card" id="joinCard">
     <h2 class="card-title">Join the queue</h2>
     <p class="lead">
-      Get your number, explore the mall, and keep this page open.
-      We'll give you a <strong>5-minute heads-up</strong> before it's your turn.
+      Grab your number, roam the mall, and watch this page for updates.
+      We'll show a <strong>~5 minute heads-up</strong> when it's almost your turn.
     </p>
-
-    <ol class="steps" aria-label="How it works">
-      <li><span class="step-n">1</span> Enter your name and join</li>
-      <li><span class="step-n">2</span> Roam freely — we'll update you here</li>
-      <li><span class="step-n">3</span> Head to the store when we call your number</li>
-    </ol>
-
-    <div class="field">
-      <label for="name">Your name</label>
-      <input type="text" id="name" maxlength="60" placeholder="e.g. Sean" autocomplete="name" enterkeyhint="go">
-    </div>
-    <button type="button" class="btn-primary" id="joinBtn">Join the Queue</button>
+    <label for="name">Your name</label>
+    <input type="text" id="name" maxlength="60" placeholder="e.g. Sean" autocomplete="name">
+    <button type="button" id="joinBtn">Join the Queue</button>
     <p class="error" id="joinError" role="alert"></p>
   </section>
 
   <!-- Queue closed -->
   <section class="card card-muted" id="closedCard" hidden>
-    <div class="empty-state">
-      <span class="empty-icon" aria-hidden="true">⏸</span>
-      <h2 class="card-title">Queue paused</h2>
-      <p class="lead">New joins are closed for now. Check back shortly or ask a team member.</p>
-    </div>
+    <h2 class="card-title">Queue paused</h2>
+    <p class="lead">New joins are closed for now. Please check back shortly or ask a team member.</p>
   </section>
 
   <!-- Session lost -->
   <section class="card card-muted" id="sessionError" hidden>
-    <div class="empty-state">
-      <span class="empty-icon" aria-hidden="true">↺</span>
-      <h2 class="card-title">Session ended</h2>
-      <p class="lead">Your spot is no longer active. You may have left, or the queue was reset.</p>
-      <button type="button" class="btn-primary" id="retryBtn">Start over</button>
-    </div>
+    <h2 class="card-title">Session ended</h2>
+    <p class="lead">Your queue spot is no longer active. You may have left, or the queue was reset.</p>
+    <button type="button" id="retryBtn">Start over</button>
   </section>
 
   <!-- Status -->
   <section class="card status-card" id="statusCard" hidden>
-    <div class="queue-hero">
-      <p class="big-label">Your queue number</p>
-      <p class="queue-number" id="qNumber" aria-live="polite">—</p>
-    </div>
-
     <div class="status-header">
       <span class="status-pill phase-waiting" id="statusPill">Waiting</span>
       <span class="guest-name" id="guestName"></span>
     </div>
 
-    <div class="advance-panel" id="advancePanel" hidden role="status">
+    <div class="advance-panel" id="advancePanel" hidden>
       <span class="panel-icon" aria-hidden="true">◷</span>
       <div>
-        <strong>Almost your turn</strong>
-        <p>Start heading toward the Maroon store — about 5 minutes to go.</p>
+        <strong>~5 minute heads-up</strong>
+        <p>You're getting close — start making your way toward the Maroon store.</p>
       </div>
     </div>
 
-    <div class="turn-panel" id="turnPanel" hidden role="status">
+    <div class="turn-panel" id="turnPanel" hidden>
       <span class="panel-icon" aria-hidden="true">→</span>
       <div>
-        <strong>Your turn now</strong>
-        <p>Please come to the store entrance. A team member will let you in shortly.</p>
+        <strong>Your turn — head to the store</strong>
+        <p>Please come to the entrance now. You'll be let in within about 5 minutes.</p>
       </div>
     </div>
 
+    <p class="big-label">Your queue number</p>
+    <p class="queue-number" id="qNumber" aria-live="polite">—</p>
+
     <div id="waitPanel">
-      <div class="stat-row">
-        <div class="stat-block">
-          <span class="stat-value" id="ahead">—</span>
-          <span class="stat-label">Guests ahead</span>
-        </div>
-        <div class="stat-divider" aria-hidden="true"></div>
-        <div class="stat-block">
-          <span class="stat-value">~<span id="est">—</span></span>
-          <span class="stat-label">Min. wait</span>
-        </div>
-      </div>
       <div class="progress-track" aria-hidden="true">
         <div class="progress-bar" id="progressBar"></div>
       </div>
-      <p class="progress-caption">Closer to the front</p>
+      <p class="ahead"><span id="ahead">—</span> guests ahead of you</p>
+      <p class="est">Estimated wait: ~<span id="est">—</span> min</p>
     </div>
 
     <div id="inStorePanel" hidden>
-      <div class="in-store-banner">
-        <span class="panel-icon" aria-hidden="true">✓</span>
-        <p class="in-store-msg">Welcome in! Enjoy Paint the Town Maroon.</p>
-      </div>
+      <p class="in-store-msg">Welcome in! Enjoy Paint the Town Maroon.</p>
     </div>
 
-    <p class="hint hint-box">
-      <span class="hint-icon" aria-hidden="true">●</span>
-      Keep this page open — it updates automatically every few seconds.
-    </p>
+    <p class="hint">This page refreshes automatically every few seconds. Keep it open for live updates.</p>
 
     <div class="btn-row">
-      <button type="button" class="btn-secondary" id="leaveBtn">Leave queue</button>
+      <button type="button" class="secondary" id="leaveBtn">Leave queue</button>
     </div>
   </section>
 
@@ -139,11 +110,6 @@
   <img class="footer-badge" src="assets/badge-oval.png" alt="">
   <span>Maroon Clothing</span>
 </footer>
-
-<div class="conn-strip" aria-live="polite">
-  <span class="conn-dot" id="connDot"></span>
-  <span id="connLabel">Connecting…</span>
-</div>
 
 <script src="js/api.js"></script>
 <script src="js/guest.js"></script>
