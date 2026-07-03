@@ -47,6 +47,14 @@
       window.navigator.standalone === true
     );
   }
+  // Instagram/TikTok/Facebook/etc in-app browsers routinely block or break
+  // the Notification and Push APIs, so guests need to be told to open the
+  // page in a real browser instead of just seeing a dead-end error.
+  function isInAppBrowser() {
+    return /FBAN|FBAV|Instagram|Line\/|TikTok|MicroMessenger|Snapchat/i.test(
+      navigator.userAgent
+    );
+  }
 
   function urlBase64ToUint8Array(base64String) {
     const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
@@ -175,38 +183,68 @@
   function reflectNotifPermission() {
     const btn = $("notifBtn");
     const stateEl = $("notifState");
-    const hint = $("iosHint");
+    const hint = $("browserHint");
     if (!btn || !stateEl) return;
+
+    function setHint(text) {
+      if (!hint) return;
+      if (text) {
+        hint.textContent = text;
+        hint.hidden = false;
+      } else {
+        hint.hidden = true;
+      }
+    }
+
+    const inApp = isInAppBrowser();
+    const needsHomeScreen = isIos() && !isStandalone() && !inApp;
+
+    if (inApp) {
+      btn.hidden = true;
+      stateEl.hidden = false;
+      stateEl.textContent = "Open in your browser";
+      stateEl.classList.remove("linked");
+      setHint(
+        'Alerts don\'t stick inside an in-app browser like this one. Tap the more menu or share icon and choose "Open in Safari" or "Open in Chrome", then come back to this page.'
+      );
+      return;
+    }
+
     if (!("Notification" in window)) {
       btn.hidden = true;
       stateEl.hidden = false;
-      stateEl.textContent = "Not on this browser";
-      if (hint) hint.hidden = !(isIos() && !isStandalone());
+      stateEl.classList.remove("linked");
+      if (needsHomeScreen) {
+        stateEl.textContent = "Add to Home Screen first";
+        setHint(
+          'On iPhone: tap the Share icon, then "Add to Home Screen". Open Maroon from that new icon, then tap "Turn on" again.'
+        );
+      } else {
+        stateEl.textContent = "Not supported here";
+        setHint("Try opening this page in Chrome or Safari for alerts.");
+      }
       return;
     }
+
+    setHint(null);
     const p = Notification.permission;
     if (p === "granted") {
       btn.hidden = true;
       stateEl.hidden = false;
       stateEl.textContent = "On";
       stateEl.classList.add("linked");
-      if (hint) hint.hidden = true;
     } else if (p === "denied") {
       btn.hidden = true;
       stateEl.hidden = false;
-      stateEl.textContent = "Blocked in browser";
+      stateEl.textContent = "Blocked, check phone settings";
       stateEl.classList.remove("linked");
-      if (hint) hint.hidden = true;
     } else {
       btn.hidden = false;
       stateEl.hidden = true;
-      if (hint) hint.hidden = !(isIos() && !isStandalone());
     }
   }
 
   function updateEmailRow() {
-    if (!emailEnabled) return;
-    $("rowEmail").hidden = false;
     const showLinked = emailLinked && !emailEditing;
     $("emailLinked").hidden = !showLinked;
     $("emailForm").hidden = showLinked;
@@ -296,7 +334,6 @@
       emailEnabled = !!cfg.emailEnabled;
       vapidPublicKey = cfg.vapidPublicKey || "";
       $("eventCapacity").textContent = cfg.capacity;
-      $("joinEmailField").hidden = !emailEnabled;
       if (!cfg.open) {
         $("joinCard").hidden = true;
         $("closedCard").hidden = false;
@@ -323,7 +360,7 @@
       $("joinError").textContent = "Drop your name so we know it's you.";
       return;
     }
-    const email = emailEnabled ? ($("joinEmail").value || "").trim().toLowerCase() : "";
+    const email = ($("joinEmail").value || "").trim().toLowerCase();
     setLoading($("joinBtn"), true);
     try {
       const j = await request("/api/join", {
@@ -446,8 +483,10 @@
       else localStorage.removeItem("maroonEmail");
       updateEmailRow();
       $("emailMsg").textContent = r.email
-        ? "Locked in! We'll hit your inbox when it's time."
-        : "Email cleared. You're browser-only for now.";
+        ? emailEnabled
+          ? "Locked in! We'll hit your inbox when it's time."
+          : "Saved! We'll use this if email alerts are switched on for the event."
+        : "Email cleared.";
     } catch (e) {
       $("emailMsg").textContent = e.message || "That didn't save. Give it another go!";
     } finally {
