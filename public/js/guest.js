@@ -19,6 +19,71 @@
   let userGestured = false;
   const baseTitle = document.title;
 
+  // Push notifications work even with the tab closed (Android straight
+  // away, iOS once the page is added to the home screen). The service
+  // worker also lets us show local alerts the way Android requires.
+  let swReg = null;
+  let vapidPublicKey = "";
+  let pushSubInFlight = false;
+  let lastPushAttempt = 0;
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker
+      .register("/sw.js")
+      .then((reg) => {
+        swReg = reg;
+      })
+      .catch((e) => console.error("Service worker registration failed:", e));
+  }
+
+  function isIos() {
+    return (
+      /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1)
+    );
+  }
+  function isStandalone() {
+    return (
+      window.matchMedia("(display-mode: standalone)").matches ||
+      window.navigator.standalone === true
+    );
+  }
+
+  function urlBase64ToUint8Array(base64String) {
+    const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
+    const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
+    const raw = atob(base64);
+    const arr = new Uint8Array(raw.length);
+    for (let i = 0; i < raw.length; i++) arr[i] = raw.charCodeAt(i);
+    return arr;
+  }
+
+  // Subscribe this browser to push and hand the subscription to the
+  // server. Safe to call repeatedly: getSubscription() returns the
+  // existing one instead of prompting again.
+  async function subscribeToPush() {
+    if (pushSubInFlight || !swReg || !vapidPublicKey || !token) return;
+    pushSubInFlight = true;
+    try {
+      let sub = await swReg.pushManager.getSubscription();
+      if (!sub) {
+        sub = await swReg.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey),
+        });
+      }
+      await request("/api/push/subscribe/" + token, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ subscription: sub.toJSON ? sub.toJSON() : sub }),
+        retries: 1,
+      });
+    } catch (e) {
+      console.error("Push subscribe failed:", e);
+    } finally {
+      pushSubInFlight = false;
+    }
+  }
+
   const PHASE_LABELS = {
     waiting: "In line",
     almost: "Almost there",
@@ -87,11 +152,14 @@
     if (!copy) return;
     try {
       if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(copy.title, {
-          body: copy.body,
-          icon: "assets/badge-oval.png",
-          tag: "maroon-queue",
-        });
+        const opts = { body: copy.body, icon: "assets/badge-oval.png", tag: "maroon-queue" };
+        // Android requires an active service worker to show notifications at
+        // all; new Notification() throws there. Prefer the SW when we have one.
+        if (swReg && swReg.showNotification) {
+          swReg.showNotification(copy.title, opts).catch((e) => console.error("Notification failed:", e));
+        } else {
+          new Notification(copy.title, opts);
+        }
       }
     } catch (e) {
       console.error("Notification failed:", e);
@@ -107,11 +175,13 @@
   function reflectNotifPermission() {
     const btn = $("notifBtn");
     const stateEl = $("notifState");
+    const hint = $("iosHint");
     if (!btn || !stateEl) return;
     if (!("Notification" in window)) {
       btn.hidden = true;
       stateEl.hidden = false;
       stateEl.textContent = "Not on this browser";
+      if (hint) hint.hidden = !(isIos() && !isStandalone());
       return;
     }
     const p = Notification.permission;
@@ -120,14 +190,17 @@
       stateEl.hidden = false;
       stateEl.textContent = "On";
       stateEl.classList.add("linked");
+      if (hint) hint.hidden = true;
     } else if (p === "denied") {
       btn.hidden = true;
       stateEl.hidden = false;
       stateEl.textContent = "Blocked in browser";
       stateEl.classList.remove("linked");
+      if (hint) hint.hidden = true;
     } else {
       btn.hidden = false;
       stateEl.hidden = true;
+      if (hint) hint.hidden = !(isIos() && !isStandalone());
     }
   }
 
@@ -151,6 +224,19 @@
     if (channels) emailLinked = !!channels.email;
     updateEmailRow();
     reflectNotifPermission();
+    // Self-heal: if permission is already granted but the server lost the
+    // subscription (cleared data, expired endpoint), quietly resubscribe.
+    // Throttled so a permanently failing browser doesn't retry every poll.
+    if (
+      channels &&
+      !channels.push &&
+      "Notification" in window &&
+      Notification.permission === "granted" &&
+      Date.now() - lastPushAttempt > 60000
+    ) {
+      lastPushAttempt = Date.now();
+      subscribeToPush();
+    }
   }
 
   function setConn(ok) {
@@ -208,6 +294,7 @@
       queueOpen = cfg.open;
       botUsername = cfg.botUsername || "";
       emailEnabled = !!cfg.emailEnabled;
+      vapidPublicKey = cfg.vapidPublicKey || "";
       $("eventCapacity").textContent = cfg.capacity;
       $("joinEmailField").hidden = !emailEnabled;
       if (!cfg.open) {
@@ -376,7 +463,10 @@
 
   $("notifBtn")?.addEventListener("click", async () => {
     try {
-      if ("Notification" in window) await Notification.requestPermission();
+      if ("Notification" in window) {
+        const perm = await Notification.requestPermission();
+        if (perm === "granted") await subscribeToPush();
+      }
     } catch (e) {
       console.error("Permission request failed:", e);
     }
