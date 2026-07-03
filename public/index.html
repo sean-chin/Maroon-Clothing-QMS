@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Paint the Town Maroon — Queue</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="assets/badge-oval.png">
+</head>
+<body>
+<div class="conn-strip" aria-live="polite">
+  <span class="conn-dot" id="connDot"></span>
+  <span id="connLabel">Connecting…</span>
+</div>
+
+<header class="hero">
+  <div class="wordmark-wrap">
+    <img src="assets/wordmark-white.png" alt="Maroon"
+         onerror="this.onerror=null;this.src='assets/wordmark-maroon.png'">
+  </div>
+  <h1 class="title">Paint the Town <span>Maroon</span></h1>
+  <p class="subtitle">11 &amp; 12 July &middot; 1&ndash;8pm</p>
+  <p class="tagline">Pop-up at the mall &middot; <span id="eventCapacity">40</span> guests in store at a time</p>
+  <hr class="rule">
+</header>
+
+<main>
+  <div class="fatal-error" id="fatalError" hidden></div>
+
+  <!-- Join -->
+  <section class="card" id="joinCard">
+    <h2 class="card-title">Join the queue</h2>
+    <p class="lead">
+      Grab your number, roam the mall, and watch this page for updates.
+      We'll show a <strong>~5 minute heads-up</strong> when it's almost your turn.
+    </p>
+    <label for="name">Your name</label>
+    <input type="text" id="name" maxlength="60" placeholder="e.g. Sean" autocomplete="name">
+    <button type="button" id="joinBtn">Join the Queue</button>
+    <p class="error" id="joinError" role="alert"></p>
+  </section>
+
+  <!-- Queue closed -->
+  <section class="card card-muted" id="closedCard" hidden>
+    <h2 class="card-title">Queue paused</h2>
+    <p class="lead">New joins are closed for now. Please check back shortly or ask a team member.</p>
+  </section>
+
+  <!-- Session lost -->
+  <section class="card card-muted" id="sessionError" hidden>
+    <h2 class="card-title">Session ended</h2>
+    <p class="lead">Your queue spot is no longer active. You may have left, or the queue was reset.</p>
+    <button type="button" id="retryBtn">Start over</button>
+  </section>
+
+  <!-- Status -->
+  <section class="card status-card" id="statusCard" hidden>
+    <div class="status-header">
+      <span class="status-pill phase-waiting" id="statusPill">Waiting</span>
+      <span class="guest-name" id="guestName"></span>
+    </div>
+
+    <div class="advance-panel" id="advancePanel" hidden>
+      <span class="panel-icon" aria-hidden="true">◷</span>
+      <div>
+        <strong>~5 minute heads-up</strong>
+        <p>You're getting close — start making your way toward the Maroon store.</p>
+      </div>
+    </div>
+
+    <div class="turn-panel" id="turnPanel" hidden>
+      <span class="panel-icon" aria-hidden="true">→</span>
+      <div>
+        <strong>Your turn — head to the store</strong>
+        <p>Please come to the entrance now. You'll be let in within about 5 minutes.</p>
+      </div>
+    </div>
+
+    <p class="big-label">Your queue number</p>
+    <p class="queue-number" id="qNumber" aria-live="polite">—</p>
+
+    <div id="waitPanel">
+      <div class="progress-track" aria-hidden="true">
+        <div class="progress-bar" id="progressBar"></div>
+      </div>
+      <p class="ahead"><span id="ahead">—</span> guests ahead of you</p>
+      <p class="est">Estimated wait: ~<span id="est">—</span> min</p>
+    </div>
+
+    <div id="inStorePanel" hidden>
+      <p class="in-store-msg">Welcome in! Enjoy Paint the Town Maroon.</p>
+    </div>
+
+    <p class="hint">This page refreshes automatically every few seconds. Keep it open for live updates.</p>
+
+    <div class="btn-row">
+      <button type="button" class="secondary" id="leaveBtn">Leave queue</button>
+    </div>
+  </section>
+
+  <!-- Thanks -->
+  <section class="card" id="thanksCard" hidden>
+    <img class="thanks-badge" src="assets/badge-oval.png" alt="">
+    <h2 class="card-title">Thanks for visiting</h2>
+    <p class="lead">We hope you loved Paint the Town Maroon.</p>
+  </section>
+</main>
+
+<footer>
+  <img class="footer-badge" src="assets/badge-oval.png" alt="">
+  <span>Maroon Clothing</span>
+</footer>
+
+<script src="js/api.js"></script>
+<script src="js/guest.js"></script>
+</body>
+</html>

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en" class="admin">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Queue Manager — Paint the Town Maroon</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="assets/badge-oval.png">
+</head>
+<body class="admin">
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<header class="hero admin-hero">
+  <img class="admin-badge" src="assets/badge-oval.png" alt="Maroon">
+  <h1 class="title">Queue <span>Manager</span></h1>
+  <p class="subtitle">Paint the Town Maroon &middot; 11–12 July</p>
+  <hr class="rule">
+</header>
+
+<main>
+  <section class="card" id="pinCard">
+    <h2 class="card-title">Staff access</h2>
+    <label for="pin">Manager PIN</label>
+    <input type="password" id="pin" autocomplete="current-password" inputmode="numeric">
+    <button type="button" id="pinBtn">Unlock</button>
+    <p class="error" id="pinError" role="alert"></p>
+  </section>
+
+  <div id="dash" hidden>
+    <div class="dash-toolbar">
+      <span class="queue-state open" id="queueState">Open</span>
+      <span class="live-indicator"><span class="conn-dot ok" id="refreshDot"></span> Auto-refresh</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat">
+        <div class="n" id="sWaiting">—</div>
+        <div class="l">Waiting</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="sCalled">—</div>
+        <div class="l">Called</div>
+      </div>
+      <div class="stat highlight">
+        <div class="n" id="sInStore">—</div>
+        <div class="l">In store</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="sSlots">—</div>
+        <div class="l">Slots free</div>
+      </div>
+      <div class="stat">
+        <div class="n" id="sTotal">—</div>
+        <div class="l">Total joined</div>
+      </div>
+    </div>
+
+    <section class="card capacity-card">
+      <div class="capacity-header">
+        <span>Store capacity</span>
+        <span id="capLabel">0 / 40</span>
+      </div>
+      <div class="progress-track capacity-track">
+        <div class="progress-bar" id="capBar"></div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title left">Call guests</h2>
+      <p class="hint left" id="callHint">Loading…</p>
+      <div class="controls">
+        <label for="callCount">Call next</label>
+        <input type="number" id="callCount" value="5" min="1" max="50" inputmode="numeric">
+        <button type="button" id="callBtn">Call &amp; show 5-min heads-up</button>
+        <button type="button" class="secondary warn" id="openBtn">Close new joins</button>
+      </div>
+      <p class="hint left">Called guests see a <strong>~5 minute heads-up</strong> on their phone browser (no SMS/WhatsApp yet).</p>
+    </section>
+
+    <section class="card table-card">
+      <h2 class="card-title left">Active queue</h2>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr><th>#</th><th>Name</th><th>Status</th><th>Actions</th></tr>
+          </thead>
+          <tbody id="rows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <div class="danger-zone">
+      <button type="button" class="secondary danger" id="resetBtn">Reset entire queue</button>
+    </div>
+  </div>
+</main>
+
+<script src="js/api.js"></script>
+<script src="js/admin.js"></script>
+</body>
+</html>

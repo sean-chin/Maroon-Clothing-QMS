@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 150">
+  <!-- Oval MAROON badge (SVG recreation of the brand mark). If you export
+       the original as a PNG, drop it in public/assets/badge.png and the
+       pages will use it instead. -->
+  <ellipse cx="150" cy="75" rx="140" ry="62" fill="none" stroke="#efe6da" stroke-width="7"/>
+  <ellipse cx="150" cy="75" rx="112" ry="42" fill="none" stroke="#efe6da" stroke-width="2.5" opacity="0.7"/>
+  <text x="150" y="88" text-anchor="middle"
+        font-family="Times New Roman, serif" font-weight="bold" font-size="38"
+        letter-spacing="3" fill="#efe6da">MAROON</text>
+</svg>

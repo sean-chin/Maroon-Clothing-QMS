@@ -1,0 +1,13 @@
+{
+  "name": "maroon-queue",
+  "version": "1.0.0",
+  "description": "Digital queue manager for Paint the Town Maroon pop-up",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "check": "node --check server.js"
+  },
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
