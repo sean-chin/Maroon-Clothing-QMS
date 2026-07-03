@@ -41,6 +41,10 @@
     </ul>
     <label for="name">What should we call you?</label>
     <input type="text" id="name" maxlength="60" placeholder="your name" autocomplete="name">
+    <div id="joinEmailField" hidden>
+      <label for="joinEmail">Want an email when it's your turn? (optional)</label>
+      <input type="email" id="joinEmail" maxlength="254" placeholder="you@somewhere.com" autocomplete="email">
+    </div>
     <button type="button" id="joinBtn">Get my spot</button>
     <p class="error" id="joinError" role="alert"></p>
   </section>
@@ -95,9 +99,104 @@
 
     <p class="hint">This page updates on its own. Keep it open so you don't miss your call.</p>
 
+    <div class="ticket-section" id="ticketSection" hidden>
+      <hr class="rule">
+      <p class="big-label" id="ticketTitle">Your Maroon Ticket</p>
+      <img class="ticket-preview" id="ticketPreview" alt="Your Maroon queue ticket">
+      <p class="ticket-caption" id="ticketCaption">
+        Save it, post it to your story, tag @maroon.clothing. Let the town know you pulled up.
+      </p>
+      <div class="btn-row">
+        <button type="button" id="ticketSaveBtn">Save my ticket</button>
+        <button type="button" class="secondary" id="ticketShareBtn">Share it</button>
+      </div>
+    </div>
+
     <div class="btn-row">
       <button type="button" class="secondary" id="leaveBtn">Leave the line</button>
     </div>
+  </section>
+
+  <section class="card notify-card" id="notifyCard" hidden>
+    <h2 class="card-title">Never miss your call</h2>
+    <p class="notify-lead">Roam the mall worry-free. Switch on a ping or two and we'll come find you when it's time!</p>
+
+    <div class="channel-row" id="rowBrowser">
+      <div class="channel-info">
+        <strong>Browser alerts</strong>
+        <p>A ping, a buzz and a cheeky chime, right here.</p>
+      </div>
+      <div class="channel-side">
+        <button type="button" class="channel-btn" id="notifBtn">Turn on</button>
+        <span class="channel-state" id="notifState" hidden></span>
+      </div>
+    </div>
+
+    <div class="channel-row" id="rowTelegram" hidden>
+      <div class="channel-info">
+        <strong>Telegram</strong>
+        <p>We'll slide into your DMs the moment it matters.</p>
+      </div>
+      <div class="channel-side">
+        <a class="channel-btn" id="tgLink" target="_blank" rel="noopener">Link it</a>
+        <span class="channel-state linked" id="tgState" hidden>Linked</span>
+      </div>
+    </div>
+
+    <div class="channel-row channel-stack" id="rowEmail" hidden>
+      <div class="channel-info">
+        <strong>Email</strong>
+        <p>Straight to your inbox, no misses.</p>
+      </div>
+      <div class="email-linked" id="emailLinked" hidden>
+        <span class="channel-state linked">Linked</span>
+        <span class="email-addr" id="emailAddr"></span>
+        <button type="button" class="channel-btn ghost" id="emailChangeBtn">Change</button>
+      </div>
+      <div class="email-form" id="emailForm">
+        <input type="email" id="emailInput" maxlength="254" placeholder="you@somewhere.com" autocomplete="email">
+        <button type="button" class="channel-btn" id="emailSaveBtn">Save</button>
+      </div>
+      <p class="channel-note" id="emailMsg"></p>
+    </div>
+  </section>
+
+  <section class="card lineup-card" id="lineupCard" hidden>
+    <p class="event-chip">While you wait</p>
+    <h2 class="card-title">One month. Four shows.</h2>
+    <p class="lead">Maroon brings you a month of uninterrupted fun, 11 July to 1 August. Your queue spot is just the opening act.</p>
+    <ol class="lineup-list">
+      <li class="lineup-item is-now">
+        <div class="lineup-head">
+          <span class="lineup-date">11 to 12 July</span>
+          <span class="lineup-now">You are here</span>
+        </div>
+        <span class="lineup-name">Opening Weekend</span>
+        <p class="lineup-desc">The Great Exchange is back. Trade in your old jeans for a fresh pair of Koi or Zodiac Denims, and shop the newest summer collection while you're at it.</p>
+      </li>
+      <li class="lineup-item">
+        <div class="lineup-head">
+          <span class="lineup-date">18 to 19 July</span>
+        </div>
+        <span class="lineup-name">Art Bazaar</span>
+        <p class="lineup-desc">A weekend celebrating local creativity, featuring a whole variety of local talents.</p>
+      </li>
+      <li class="lineup-item">
+        <div class="lineup-head">
+          <span class="lineup-date">25 to 26 July</span>
+        </div>
+        <span class="lineup-name">Football Weekend</span>
+        <p class="lineup-desc">The World Cup madness is not over yet. Take on the challenges and shop vintage jerseys to rep your favourite team.</p>
+      </li>
+      <li class="lineup-item">
+        <div class="lineup-head">
+          <span class="lineup-date">1 Aug</span>
+        </div>
+        <span class="lineup-name">The Afterparty</span>
+        <p class="lineup-desc">Celebrate the finale together. Non-stop bangers and the craziest sober rave.</p>
+      </li>
+    </ol>
+    <p class="hint">All of it at Mandarin Gallery #02-19. Pull up.</p>
   </section>
 
   <section class="card" id="thanksCard" hidden>
@@ -115,5 +214,6 @@
 
 <script src="js/api.js"></script>
 <script src="js/guest.js"></script>
+<script src="js/ticket.js"></script>
 </body>
 </html>

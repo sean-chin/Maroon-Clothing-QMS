@@ -13,6 +13,9 @@
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
+/* author display rules (e.g. flex panels) must never beat the hidden attribute */
+[hidden] { display: none !important; }
+
 body {
   font-family: "Times New Roman Condensed", "Times New Roman", Times, serif;
   font-stretch: condensed;
@@ -464,6 +467,237 @@ button.loading { opacity: 0.65; pointer-events: none; }
   50% { box-shadow: 0 0 22px rgba(138, 18, 32, 0.55); }
 }
 
+/* ----- "never miss your call" channels ----- */
+.notify-card { text-align: left; }
+.notify-card .card-title { text-align: left; }
+.notify-lead {
+  font-size: 16px;
+  line-height: 1.45;
+  color: var(--cream-dim);
+  font-style: italic;
+  margin-bottom: 8px;
+}
+
+.channel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 14px 0;
+  border-top: 1px solid rgba(241, 235, 235, 0.1);
+}
+.channel-row.channel-stack { display: block; }
+.channel-stack .channel-info { margin-bottom: 10px; }
+
+.channel-info strong {
+  display: block;
+  font-size: 16px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sand);
+}
+.channel-info p {
+  font-size: 14px;
+  color: var(--cream-dim);
+  font-style: italic;
+  margin-top: 3px;
+  line-height: 1.35;
+}
+
+.channel-side { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+.channel-btn {
+  font-family: inherit;
+  font-stretch: condensed;
+  font-size: 12px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 9px 16px;
+  border-radius: 2px;
+  border: 1px solid var(--maroon-bright);
+  background: linear-gradient(180deg, var(--maroon-bright) 0%, var(--maroon) 100%);
+  color: var(--cream);
+  text-decoration: none;
+  display: inline-block;
+  cursor: pointer;
+  box-shadow: 0 2px 12px rgba(102, 8, 16, 0.35);
+  white-space: nowrap;
+}
+.channel-btn:hover:not(:disabled) {
+  background: linear-gradient(180deg, #9a1828 0%, var(--maroon-bright) 100%);
+}
+.channel-btn.ghost {
+  background: transparent;
+  border-color: var(--hairline);
+  color: var(--cream-dim);
+  box-shadow: none;
+}
+.channel-btn.ghost:hover:not(:disabled) {
+  color: var(--cream);
+  border-color: var(--sand);
+  background: rgba(214, 192, 177, 0.08);
+}
+
+.channel-state {
+  display: inline-block;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--hairline);
+  color: var(--cream-dim);
+  white-space: nowrap;
+}
+.channel-state.linked {
+  background: rgba(143, 188, 143, 0.12);
+  border-color: rgba(143, 188, 143, 0.5);
+  color: var(--success);
+}
+
+.email-linked {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.email-addr {
+  font-style: italic;
+  color: var(--sand);
+  font-size: 15px;
+  word-break: break-all;
+}
+
+.email-form { display: flex; gap: 8px; }
+.email-form input {
+  flex: 1;
+  margin-bottom: 0;
+  font-size: 16px;
+  padding: 10px 12px;
+}
+
+.channel-note {
+  font-size: 13px;
+  color: var(--cream-dim);
+  font-style: italic;
+  min-height: 18px;
+  margin-top: 8px;
+}
+
+/* ----- the Maroon Ticket ----- */
+.ticket-section { margin-top: 20px; }
+.ticket-section .rule { margin-bottom: 18px; }
+
+.ticket-preview {
+  display: block;
+  width: min(240px, 68vw);
+  height: auto;
+  margin: 14px auto 0;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  box-shadow: 0 10px 34px rgba(0, 0, 0, 0.45);
+}
+
+.ticket-caption {
+  font-size: 15px;
+  color: var(--cream-dim);
+  font-style: italic;
+  line-height: 1.45;
+  margin-top: 14px;
+}
+
+.ticket-section.gold .big-label { color: #d9b64a; letter-spacing: 5px; }
+.ticket-section.gold .ticket-preview {
+  border-color: rgba(217, 182, 74, 0.55);
+  box-shadow: 0 0 34px rgba(217, 182, 74, 0.28);
+}
+.ticket-section.gold .ticket-caption { color: #e9dcb4; }
+.ticket-section.gold #ticketSaveBtn {
+  border-color: #d9b64a;
+  background: linear-gradient(180deg, #b8933a 0%, #8a6c22 100%);
+  box-shadow: 0 2px 14px rgba(217, 182, 74, 0.35);
+}
+
+/* ----- while you wait: the month's lineup ----- */
+.lineup-card { text-align: center; }
+
+.lineup-list {
+  list-style: none;
+  text-align: left;
+  margin: 6px 0 4px;
+}
+.lineup-item {
+  padding: 16px 4px 14px;
+  border-top: 1px solid var(--hairline);
+}
+.lineup-item:last-child { border-bottom: 1px solid var(--hairline); }
+
+.lineup-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+.lineup-date {
+  font-size: 12px;
+  letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--cream-dim);
+}
+.lineup-now {
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sand);
+  border: 1px solid rgba(214, 192, 177, 0.45);
+  border-radius: 999px;
+  padding: 3px 9px;
+  background: rgba(102, 8, 16, 0.35);
+  white-space: nowrap;
+}
+.lineup-name {
+  display: block;
+  font-size: 26px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--cream);
+  margin-top: 4px;
+  line-height: 1.15;
+}
+.lineup-desc {
+  font-size: 15px;
+  color: var(--cream-dim);
+  line-height: 1.45;
+  margin-top: 5px;
+}
+.lineup-item.is-now {
+  background: rgba(102, 8, 16, 0.22);
+  border-left: 2px solid var(--maroon-bright);
+  padding-left: 12px;
+  padding-right: 10px;
+  border-radius: 0 3px 3px 0;
+}
+.lineup-item.is-now .lineup-name { color: var(--sand); }
+
+/* ----- golden ticket rows in the admin table ----- */
+tr.gold-row td { background: rgba(217, 182, 74, 0.07); }
+tr.gold-row td.num { color: #e6c65f; }
+.gold-chip {
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: 8px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #e6c65f;
+  border: 1px solid rgba(217, 182, 74, 0.5);
+  background: rgba(217, 182, 74, 0.1);
+}
+
 footer {
   padding: 20px 14px 30px;
   font-size: 12px;
@@ -602,6 +836,21 @@ td.empty {
 .pill.waiting { color: var(--cream-dim); }
 .pill.called { background: var(--maroon); border-color: var(--maroon-bright); color: var(--cream); }
 .pill.inStore { background: rgba(143, 188, 143, 0.2); border-color: var(--success); color: var(--success); }
+
+/* Per-guest channel chips: shows staff who gets pinged remotely. */
+.chip {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  border: 1px solid rgba(214, 192, 177, 0.4);
+  color: var(--sand);
+  vertical-align: middle;
+  white-space: nowrap;
+}
 
 td .row-btn {
   font-size: 11px;

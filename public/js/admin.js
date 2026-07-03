@@ -91,14 +91,16 @@
       const rows = s.guests;
       $("rows").innerHTML = rows.length
         ? rows
-            .map(
-              (g) => `<tr>
-        <td class="num">${g.number}</td>
-        <td>${esc(g.name)}</td>
+            .map((g) => {
+              // Golden ticket: every 25th number wins a surprise at the door
+              const gold = g.number % 25 === 0 && g.number !== 0;
+              return `<tr${gold ? ' class="gold-row"' : ""}>
+        <td class="num">${g.number}${gold ? '<span class="gold-chip">Gold</span>' : ""}</td>
+        <td>${esc(g.name)}${g.telegram ? '<span class="chip" title="Gets Telegram pings">TG</span>' : ""}${g.email ? '<span class="chip" title="Gets email pings">@</span>' : ""}</td>
         <td><span class="pill ${g.status}">${g.status}</span></td>
         <td>${actions(g)}</td>
-      </tr>`
-            )
+      </tr>`;
+            })
             .join("")
         : `<tr><td colspan="4" class="empty">Queue's empty right now.</td></tr>`;
 
