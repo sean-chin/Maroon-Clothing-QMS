@@ -8,6 +8,7 @@
     "check": "node --check server.js"
   },
   "dependencies": {
-    "express": "^4.19.2"
+    "express": "^4.19.2",
+    "nodemailer": "^9.0.3"
   }
 }

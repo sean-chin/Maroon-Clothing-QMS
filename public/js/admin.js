@@ -94,7 +94,7 @@
             .map(
               (g) => `<tr>
         <td class="num">${g.number}</td>
-        <td>${esc(g.name)}</td>
+        <td>${esc(g.name)}${g.telegram ? '<span class="chip" title="Gets Telegram pings">TG</span>' : ""}${g.email ? '<span class="chip" title="Gets email pings">@</span>' : ""}</td>
         <td><span class="pill ${g.status}">${g.status}</span></td>
         <td>${actions(g)}</td>
       </tr>`

@@ -41,6 +41,10 @@
     </ul>
     <label for="name">What should we call you?</label>
     <input type="text" id="name" maxlength="60" placeholder="your name" autocomplete="name">
+    <div id="joinEmailField" hidden>
+      <label for="joinEmail">Want an email when it's your turn? (optional)</label>
+      <input type="email" id="joinEmail" maxlength="254" placeholder="you@somewhere.com" autocomplete="email">
+    </div>
     <button type="button" id="joinBtn">Get my spot</button>
     <p class="error" id="joinError" role="alert"></p>
   </section>
@@ -97,6 +101,50 @@
 
     <div class="btn-row">
       <button type="button" class="secondary" id="leaveBtn">Leave the line</button>
+    </div>
+  </section>
+
+  <section class="card notify-card" id="notifyCard" hidden>
+    <h2 class="card-title">Never miss your call</h2>
+    <p class="notify-lead">Roam the mall worry-free. Switch on a ping or two and we'll come find you when it's time!</p>
+
+    <div class="channel-row" id="rowBrowser">
+      <div class="channel-info">
+        <strong>Browser alerts</strong>
+        <p>A ping, a buzz and a cheeky chime, right here.</p>
+      </div>
+      <div class="channel-side">
+        <button type="button" class="channel-btn" id="notifBtn">Turn on</button>
+        <span class="channel-state" id="notifState" hidden></span>
+      </div>
+    </div>
+
+    <div class="channel-row" id="rowTelegram" hidden>
+      <div class="channel-info">
+        <strong>Telegram</strong>
+        <p>We'll slide into your DMs the moment it matters.</p>
+      </div>
+      <div class="channel-side">
+        <a class="channel-btn" id="tgLink" target="_blank" rel="noopener">Link it</a>
+        <span class="channel-state linked" id="tgState" hidden>Linked</span>
+      </div>
+    </div>
+
+    <div class="channel-row channel-stack" id="rowEmail" hidden>
+      <div class="channel-info">
+        <strong>Email</strong>
+        <p>Straight to your inbox, no misses.</p>
+      </div>
+      <div class="email-linked" id="emailLinked" hidden>
+        <span class="channel-state linked">Linked</span>
+        <span class="email-addr" id="emailAddr"></span>
+        <button type="button" class="channel-btn ghost" id="emailChangeBtn">Change</button>
+      </div>
+      <div class="email-form" id="emailForm">
+        <input type="email" id="emailInput" maxlength="254" placeholder="you@somewhere.com" autocomplete="email">
+        <button type="button" class="channel-btn" id="emailSaveBtn">Save</button>
+      </div>
+      <p class="channel-note" id="emailMsg"></p>
     </div>
   </section>
 
