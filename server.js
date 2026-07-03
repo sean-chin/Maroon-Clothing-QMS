@@ -6,11 +6,12 @@
  * or restart never loses the queue. Guests poll their status; the queue
  * manager drives the queue from /admin.
  *
- * Notifications: multi-channel and fire-and-forget. Guests can get browser
- * alerts (client side), Telegram messages, and emails at the "almost your
- * turn" and "your turn" moments. Every remote send has one retry and can
- * never throw or block a queue operation. Missing config simply disables
- * a channel; the queue itself never depends on any of them.
+ * Notifications: multi-channel and fire-and-forget. Guests can get push
+ * notifications (works even with the tab closed, on Android and on iOS once
+ * added to the home screen), Telegram messages, and emails at the "almost
+ * your turn" and "your turn" moments. Every remote send has one retry and
+ * can never throw or block a queue operation. Missing config simply
+ * disables a channel; the queue itself never depends on any of them.
  */
 
 const express = require("express");
@@ -18,6 +19,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const webpush = require("web-push");
 
 // ---------- config ----------
 const PORT = process.env.PORT || 3000;
@@ -39,13 +41,22 @@ const SMTP_PASS = process.env.SMTP_PASS || "";
 const SMTP_FROM = process.env.SMTP_FROM || SMTP_USER;
 const EMAIL_ENABLED = !!(SMTP_HOST && SMTP_USER && SMTP_PASS);
 
+// Web Push config for real device notifications, working even with the tab
+// closed. Generate a keypair once with `npm run vapid-keys`. Like the other
+// channels, missing keys just means push stays off.
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || "";
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || "";
+const VAPID_SUBJECT = process.env.VAPID_SUBJECT || "mailto:hello@maroon.clothing";
+const PUSH_ENABLED = !!(VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY);
+if (PUSH_ENABLED) webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+
 const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "queue.json");
 
 // ---------- state + persistence ----------
 let state = {
   seq: 0, // last issued queue number
-  guests: [], // {id, token, number, name, status, joinedAt, calledAt, tgChat, email, headsUpSent}
+  guests: [], // {id, token, number, name, status, joinedAt, calledAt, tgChat, email, pushSub, headsUpSent}
   open: true,
 };
 // statuses: waiting -> called -> inStore -> done | noShow
@@ -210,12 +221,29 @@ function fireAndForget(label, send) {
 }
 
 // Central dispatcher: fans a notification out to every channel the guest
-// linked. kind is "linked", "headsUp" or "yourTurn". Browser alerts are
-// handled client side from the polled phase, so they need nothing here.
+// linked. kind is "linked", "headsUp" or "yourTurn".
 function notifyGuest(guest, kind) {
   const copy = NOTIFY_COPY[kind];
   if (!guest || !copy) return;
   const text = copy.text(guest);
+
+  if (PUSH_ENABLED && guest.pushSub) {
+    const sub = guest.pushSub;
+    const payload = JSON.stringify({ title: copy.headline, body: text, tag: "maroon-queue" });
+    fireAndForget(`push ${kind} #${guest.number}`, async () => {
+      try {
+        await webpush.sendNotification(sub, payload);
+        return true;
+      } catch (e) {
+        // Subscription is gone (permission revoked, browser data cleared, etc).
+        if (e.statusCode === 404 || e.statusCode === 410) {
+          guest.pushSub = null;
+          save();
+        }
+        throw e;
+      }
+    });
+  }
 
   if (BOT_TOKEN && guest.tgChat) {
     const chatId = guest.tgChat;
@@ -321,6 +349,7 @@ app.get("/api/config", (_req, res) => {
   res.json({
     botUsername: BOT_USERNAME,
     emailEnabled: EMAIL_ENABLED,
+    vapidPublicKey: PUSH_ENABLED ? VAPID_PUBLIC_KEY : "",
     open: state.open,
     capacity: STORE_CAPACITY,
     advanceMinutes: 5,
@@ -344,6 +373,7 @@ app.post("/api/join", rateLimit(10), (req, res) => {
     tgChat: null,
     // Optional email; an invalid address never blocks the join, we just drop it.
     email: cleanEmail(req.body.email),
+    pushSub: null,
     headsUpSent: false,
   };
   state.guests.push(guest);
@@ -366,7 +396,7 @@ app.get("/api/status/:token", rateLimit(60), (req, res) => {
     estMinutes: phase === "waiting" || phase === "almost" ? estMinutes : 0,
     aheadMax,
     advanceMinutes: 5,
-    channels: { telegram: !!guest.tgChat, email: !!guest.email },
+    channels: { telegram: !!guest.tgChat, email: !!guest.email, push: !!guest.pushSub },
   });
 });
 
@@ -398,6 +428,30 @@ app.post("/api/contact/:token", rateLimit(10), (req, res) => {
   res.json({ ok: true, email: guest.email });
 });
 
+// Register a browser push subscription for this guest. Works even after the
+// tab is closed, on Android straight away and on iOS once the page has been
+// added to the home screen.
+app.post("/api/push/subscribe/:token", rateLimit(10), (req, res) => {
+  const guest = byToken(req.params.token);
+  if (!guest) return res.status(404).json({ error: "Not found" });
+  const sub = req.body.subscription;
+  if (!sub || typeof sub.endpoint !== "string") {
+    return res.status(400).json({ error: "Invalid push subscription" });
+  }
+  guest.pushSub = sub;
+  save();
+  res.json({ ok: true });
+});
+
+app.post("/api/push/unsubscribe/:token", rateLimit(10), (req, res) => {
+  const guest = byToken(req.params.token);
+  if (guest) {
+    guest.pushSub = null;
+    save();
+  }
+  res.json({ ok: true });
+});
+
 // ----- admin API -----
 function requireAdmin(req, res, next) {
   if (req.headers["x-admin-pin"] === ADMIN_PIN) return next();
@@ -427,6 +481,7 @@ app.get("/api/admin/state", requireAdmin, (_req, res) => {
         calledAt: g.calledAt,
         telegram: !!g.tgChat,
         email: !!g.email,
+        push: !!g.pushSub,
       })),
   });
 });
@@ -497,6 +552,7 @@ app.use((err, _req, res, _next) => {
 
 app.listen(PORT, () => {
   console.log(`Paint the Town Maroon queue running on http://localhost:${PORT}`);
-  if (!BOT_TOKEN) console.log("TELEGRAM_BOT_TOKEN not set: Telegram notifications disabled (browser notifications still work).");
+  if (!BOT_TOKEN) console.log("TELEGRAM_BOT_TOKEN not set: Telegram notifications disabled.");
   if (!EMAIL_ENABLED) console.log("SMTP not configured: email notifications disabled (set SMTP_HOST, SMTP_USER, SMTP_PASS).");
+  if (!PUSH_ENABLED) console.log("VAPID keys not set: push notifications disabled (run `npm run vapid-keys` and set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY).");
 });

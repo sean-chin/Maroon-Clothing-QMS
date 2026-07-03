@@ -5,10 +5,13 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "check": "node --check server.js"
+    "check": "node --check server.js",
+    "vapid-keys": "web-push generate-vapid-keys",
+    "test-email": "node scripts/send-test-email.js"
   },
   "dependencies": {
     "express": "^4.19.2",
-    "nodemailer": "^9.0.3"
+    "nodemailer": "^9.0.3",
+    "web-push": "^3.6.7"
   }
 }

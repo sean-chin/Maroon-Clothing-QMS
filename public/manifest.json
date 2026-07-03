@@ -1,0 +1,11 @@
+{
+  "name": "Paint the Town Maroon",
+  "short_name": "Maroon Queue",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#270707",
+  "theme_color": "#660810",
+  "icons": [
+    { "src": "assets/badge-oval.png", "sizes": "1024x819", "type": "image/jpeg" }
+  ]
+}
