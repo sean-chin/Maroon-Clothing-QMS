@@ -2,7 +2,8 @@
 <html lang="en" class="admin">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#270707">
 <title>Queue Manager — Paint the Town Maroon</title>
 <link rel="stylesheet" href="style.css">
 <link rel="icon" href="assets/badge-oval.png">
@@ -13,23 +14,26 @@
 <header class="hero admin-hero">
   <img class="admin-badge" src="assets/badge-oval.png" alt="Maroon">
   <h1 class="title">Queue <span>Manager</span></h1>
-  <p class="subtitle">Paint the Town Maroon &middot; 11–12 July</p>
+  <p class="subtitle">Paint the Town Maroon &middot; 11–12 July &middot; 1–8pm</p>
   <hr class="rule">
 </header>
 
 <main>
   <section class="card" id="pinCard">
     <h2 class="card-title">Staff access</h2>
-    <label for="pin">Manager PIN</label>
-    <input type="password" id="pin" autocomplete="current-password" inputmode="numeric">
-    <button type="button" id="pinBtn">Unlock</button>
+    <p class="lead left">Enter the manager PIN to control the queue.</p>
+    <div class="field">
+      <label for="pin">Manager PIN</label>
+      <input type="password" id="pin" autocomplete="current-password" inputmode="numeric" placeholder="••••••••">
+    </div>
+    <button type="button" class="btn-primary" id="pinBtn">Unlock dashboard</button>
     <p class="error" id="pinError" role="alert"></p>
   </section>
 
   <div id="dash" hidden>
     <div class="dash-toolbar">
       <span class="queue-state open" id="queueState">Open</span>
-      <span class="live-indicator"><span class="conn-dot ok" id="refreshDot"></span> Auto-refresh</span>
+      <span class="live-indicator"><span class="conn-dot ok" id="refreshDot"></span> Live</span>
     </div>
 
     <div class="stats">
@@ -45,7 +49,7 @@
         <div class="n" id="sInStore">—</div>
         <div class="l">In store</div>
       </div>
-      <div class="stat">
+      <div class="stat accent">
         <div class="n" id="sSlots">—</div>
         <div class="l">Slots free</div>
       </div>
@@ -63,22 +67,28 @@
       <div class="progress-track capacity-track">
         <div class="progress-bar" id="capBar"></div>
       </div>
+      <p class="capacity-hint" id="capHint">Guests currently inside the store</p>
     </section>
 
-    <section class="card">
-      <h2 class="card-title left">Call guests</h2>
+    <section class="card action-card">
+      <h2 class="card-title left">Call guests in</h2>
       <p class="hint left" id="callHint">Loading…</p>
-      <div class="controls">
-        <label for="callCount">Call next</label>
-        <input type="number" id="callCount" value="5" min="1" max="50" inputmode="numeric">
-        <button type="button" id="callBtn">Call &amp; show 5-min heads-up</button>
-        <button type="button" class="secondary warn" id="openBtn">Close new joins</button>
+      <div class="call-action">
+        <div class="call-input-row">
+          <label for="callCount">How many to call</label>
+          <input type="number" id="callCount" value="5" min="1" max="50" inputmode="numeric">
+        </div>
+        <button type="button" class="btn-primary btn-large" id="callBtn">Call next guests</button>
       </div>
-      <p class="hint left">Called guests see a <strong>~5 minute heads-up</strong> on their phone browser (no SMS/WhatsApp yet).</p>
+      <p class="hint left subtle">Called guests see a <strong>5-minute heads-up</strong> on their phone browser.</p>
+      <div class="toolbar-row">
+        <button type="button" class="btn-secondary warn" id="openBtn">Close new joins</button>
+      </div>
     </section>
 
     <section class="card table-card">
       <h2 class="card-title left">Active queue</h2>
+      <p class="hint left subtle">Tap an action to update a guest's status.</p>
       <div class="table-wrap">
         <table>
           <thead>
@@ -87,10 +97,11 @@
           <tbody id="rows"></tbody>
         </table>
       </div>
+      <div class="guest-cards" id="guestCards" aria-label="Active queue"></div>
     </section>
 
     <div class="danger-zone">
-      <button type="button" class="secondary danger" id="resetBtn">Reset entire queue</button>
+      <button type="button" class="btn-secondary danger" id="resetBtn">Reset entire queue</button>
     </div>
   </div>
 </main>

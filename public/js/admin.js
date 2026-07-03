@@ -37,19 +37,46 @@
     return d.innerHTML;
   }
 
+  const STATUS_LABELS = {
+    waiting: "Waiting",
+    called: "Called — 5 min heads-up",
+    inStore: "In store",
+  };
+
   function actions(g) {
     const b = (a, label, cls) =>
       `<button type="button" class="row-btn ${cls || ""}" data-id="${g.id}" data-action="${a}">${label}</button>`;
     if (g.status === "waiting")
-      return b("entered", "Entered") + b("noshow", "Remove", "secondary");
+      return b("entered", "Let in") + b("noshow", "Remove", "secondary");
     if (g.status === "called")
       return (
-        b("entered", "Entered") +
+        b("entered", "Let in") +
         b("noshow", "No-show", "secondary") +
-        b("requeue", "Re-queue", "secondary")
+        b("requeue", "Back to waiting", "secondary")
       );
     if (g.status === "inStore") return b("done", "Left store");
     return "";
+  }
+
+  function renderGuestCards(rows) {
+    const el = $("guestCards");
+    if (!el) return;
+    if (!rows.length) {
+      el.innerHTML = `<p class="hint left subtle">No active guests in the queue.</p>`;
+      return;
+    }
+    el.innerHTML = rows
+      .map(
+        (g) => `<article class="guest-card">
+      <div class="guest-card-top">
+        <span class="guest-card-num">#${g.number}</span>
+        <span class="guest-card-name">${esc(g.name)}</span>
+        <span class="pill ${g.status}">${STATUS_LABELS[g.status] || g.status}</span>
+      </div>
+      <div class="guest-card-actions">${actions(g)}</div>
+    </article>`
+      )
+      .join("");
   }
 
   function updateCapacityBar(inStore, cap) {
@@ -75,6 +102,13 @@
       $("sSlots").textContent = s.slotsAvailable;
 
       updateCapacityBar(s.counts.inStore, s.capacity);
+      const capHint = $("capHint");
+      if (capHint) {
+        capHint.textContent =
+          s.counts.inStore >= s.capacity
+            ? "Store is full — mark guests as left before calling more."
+            : `${s.slotsAvailable} spot${s.slotsAvailable === 1 ? "" : "s"} available for new guests.`;
+      }
 
       const suggested = s.suggestedCall || 1;
       $("callCount").value = suggested;
@@ -95,12 +129,13 @@
               (g) => `<tr>
         <td class="num">${g.number}</td>
         <td>${esc(g.name)}</td>
-        <td><span class="pill ${g.status}">${g.status}</span></td>
+        <td><span class="pill ${g.status}">${STATUS_LABELS[g.status] || g.status}</span></td>
         <td>${actions(g)}</td>
       </tr>`
             )
             .join("")
         : `<tr><td colspan="4" class="empty">No active guests in the queue.</td></tr>`;
+      renderGuestCards(rows);
 
       $("refreshDot").classList.add("ok");
     } catch (e) {
@@ -125,11 +160,14 @@
     }
   }
 
-  $("rows")?.addEventListener("click", (e) => {
+  function handleRowClick(e) {
     const btn = e.target.closest("[data-action]");
     if (!btn) return;
     guestAction(btn.dataset.id, btn.dataset.action);
-  });
+  }
+
+  $("rows")?.addEventListener("click", handleRowClick);
+  $("guestCards")?.addEventListener("click", handleRowClick);
 
   $("callBtn")?.addEventListener("click", async () => {
     setLoading($("callBtn"), true);
