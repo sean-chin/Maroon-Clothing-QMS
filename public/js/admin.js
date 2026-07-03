@@ -194,8 +194,21 @@
   $("pinBtn")?.addEventListener("click", unlock);
   $("pin")?.addEventListener("keydown", (e) => e.key === "Enter" && unlock());
 
+  $("pinToggle")?.addEventListener("click", () => {
+    const input = $("pin");
+    const toggle = $("pinToggle");
+    const reveal = input.type === "password";
+    input.type = reveal ? "text" : "password";
+    toggle.textContent = reveal ? "Hide" : "Show";
+    toggle.setAttribute("aria-pressed", String(reveal));
+    toggle.setAttribute("aria-label", reveal ? "Hide PIN" : "Show PIN");
+    input.focus();
+  });
+
   if (pin) {
     $("pin").value = pin;
     unlock();
+  } else {
+    $("pin")?.focus();
   }
 })();

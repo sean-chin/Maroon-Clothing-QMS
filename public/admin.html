@@ -22,7 +22,12 @@
     <h2 class="card-title">Staff only</h2>
     <p class="lead left">Enter your PIN to run the queue for the pop-up.</p>
     <label for="pin">Manager PIN</label>
-    <input type="password" id="pin" autocomplete="current-password" inputmode="numeric" placeholder="enter PIN">
+    <div class="pin-field">
+      <input type="password" id="pin" autocomplete="current-password"
+             autocapitalize="off" autocorrect="off" spellcheck="false" placeholder="enter PIN">
+      <button type="button" class="pin-toggle" id="pinToggle" aria-label="Show PIN" aria-pressed="false">Show</button>
+    </div>
+    <p class="hint left">Letters and numbers both work — type the PIN exactly as it was given to you.</p>
     <button type="button" id="pinBtn">Open dashboard</button>
     <p class="error" id="pinError" role="alert"></p>
   </section>

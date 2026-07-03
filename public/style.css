@@ -245,6 +245,30 @@ button.secondary:hover:not(:disabled) {
   background: rgba(214, 192, 177, 0.08);
 }
 button.warn { border-color: var(--sand); color: var(--sand); }
+
+/* ----- pin field with show/hide toggle ----- */
+.pin-field { position: relative; display: block; }
+.pin-field input { margin-bottom: 0; padding-right: 84px; }
+.pin-toggle {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 8px 14px;
+  font-size: 11px;
+  letter-spacing: 2px;
+  background: transparent;
+  border: 1px solid var(--hairline);
+  color: var(--cream-dim);
+  box-shadow: none;
+}
+.pin-toggle:hover:not(:disabled) {
+  background: rgba(214, 192, 177, 0.08);
+  border-color: var(--sand);
+  color: var(--cream);
+}
+.pin-toggle:active:not(:disabled) { transform: translateY(-50%) scale(0.97); }
+#pinCard .hint { margin-top: 10px; margin-bottom: 18px; }
 button.danger { border-color: rgba(224, 138, 150, 0.5); color: var(--error); }
 button:disabled { opacity: 0.45; cursor: default; }
 button.loading { opacity: 0.65; pointer-events: none; }
