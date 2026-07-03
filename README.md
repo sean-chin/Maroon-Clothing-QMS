@@ -17,20 +17,44 @@ Statuses flow: `waiting -> called -> in store -> done` (or `no-show`).
 
 ## Setup
 
+Requires [Node.js](https://nodejs.org/) 18+.
+
 ```
 npm install
-npm start          # http://localhost:3000  (guest)  /admin (manager)
+npm start
+```
+
+Then open:
+
+- **Guest page** — http://localhost:3000
+- **Manager dashboard** — http://localhost:3000/admin
+
+The dashboard asks for a **Manager PIN**. It defaults to `maroon2026` (set your own with `ADMIN_PIN`, see below). The PIN can contain **letters and numbers**, and the login screen has a "Show" button so you can double-check it on your phone.
+
+### Configuration (optional)
+
+All settings are environment variables — the app runs fine with the defaults if you set nothing. It does **not** auto-load a `.env` file, so export the variables in your shell before `npm start`. See `.env.example` for the full list (`ADMIN_PIN`, `PORT`, `STORE_CAPACITY`, `GUESTS_PER_MINUTE`, Telegram tokens).
+
+**macOS / Linux (bash/zsh):**
+```bash
+ADMIN_PIN="pick-a-pin" PORT=3000 npm start
+```
+
+**Windows (PowerShell):**
+```powershell
+$env:ADMIN_PIN="pick-a-pin"; $env:PORT="3000"; npm start
 ```
 
 ### Telegram notifications
 
 1. Message **@BotFather** on Telegram, `/newbot`, pick a name like "Maroon Queue".
-2. Copy the token and username into your environment (see `.env.example`):
+2. Copy the token and username into your environment (see `.env.example`), e.g. on macOS / Linux:
+   ```bash
+   TELEGRAM_BOT_TOKEN="123456:ABC..." TELEGRAM_BOT_USERNAME="MaroonQueueBot" npm start
+   ```
+   …or on Windows PowerShell:
    ```powershell
-   $env:TELEGRAM_BOT_TOKEN="123456:ABC..."
-   $env:TELEGRAM_BOT_USERNAME="MaroonQueueBot"
-   $env:ADMIN_PIN="pick-a-pin"
-   npm start
+   $env:TELEGRAM_BOT_TOKEN="123456:ABC..."; $env:TELEGRAM_BOT_USERNAME="MaroonQueueBot"; npm start
    ```
 Without a token the app still works fully, using browser notifications only.
 
