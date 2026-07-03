@@ -21,6 +21,7 @@ const fs = require("fs");
 const path = require("path");
 const crypto = require("crypto");
 const nodemailer = require("nodemailer");
+const { createSmtpTransport, smtpCertHint, smtpAuthHint } = require("./scripts/smtp-transport");
 const webpush = require("web-push");
 
 // ---------- config ----------
@@ -149,12 +150,7 @@ async function tgApi(method, body) {
 // ---------- email ----------
 let mailer = null;
 if (EMAIL_ENABLED) {
-  mailer = nodemailer.createTransport({
-    host: SMTP_HOST,
-    port: SMTP_PORT,
-    secure: SMTP_PORT === 465,
-    auth: { user: SMTP_USER, pass: SMTP_PASS },
-  });
+  mailer = createSmtpTransport();
 }
 
 // Simple branded HTML that renders fine in Gmail: maroon header, white body.
@@ -178,23 +174,28 @@ function emailHtml(guest, headline, body) {
 }
 
 // ---------- notifications ----------
-// Brand-voice copy for each notification moment. "text" is used verbatim
-// on Telegram and as the plain-text email body.
+// Brand-voice copy for each notification moment.
+// headline + body go to email HTML and push (no repeated opener in the body).
+// text is the full standalone message for Telegram.
 const NOTIFY_COPY = {
   linked: {
     headline: "You're locked in!",
+    body: () =>
+      "We'll give you a shout here when it's nearly your turn. Go roam the mall, we've got you!",
     text: (g) =>
-      `You're linked! You're number ${g.number} in the Paint the Town Maroon queue. We'll give you a shout here when it's nearly your turn. Go roam the mall, we've got you!`,
+      `You're number ${g.number} in the queue. We'll give you a shout here when it's nearly your turn. Go roam the mall, we've got you!`,
     subject: (g) => `You're in! Number ${g.number} at Paint the Town Maroon`,
   },
   headsUp: {
     headline: "You're almost up!",
+    body: () => "Start making your way back to Maroon, about 5 minutes to go.",
     text: () =>
       "You're almost up! Start making your way back to Maroon, about 5 minutes to go.",
     subject: (g) => `Almost your turn! About 5 minutes to go, number ${g.number}`,
   },
   yourTurn: {
     headline: "It's your turn!",
+    body: () => "Head to the Maroon entrance now, the team's ready for you.",
     text: () =>
       "It's your turn! Head to the Maroon entrance now, the team's ready for you.",
     subject: (g) => `It's your turn, number ${g.number}! Head to Maroon now`,
@@ -224,14 +225,19 @@ function fireAndForget(label, send) {
 
 // Central dispatcher: fans a notification out to every channel the guest
 // linked. kind is "linked", "headsUp" or "yourTurn".
+function emailPlainText(guest, headline, body) {
+  return `${headline}\n\n${body}\n\nYour queue number: ${guest.number}`;
+}
+
 function notifyGuest(guest, kind) {
   const copy = NOTIFY_COPY[kind];
   if (!guest || !copy) return;
+  const body = copy.body(guest);
   const text = copy.text(guest);
 
   if (PUSH_ENABLED && guest.pushSub) {
     const sub = guest.pushSub;
-    const payload = JSON.stringify({ title: copy.headline, body: text, tag: "maroon-queue" });
+    const payload = JSON.stringify({ title: copy.headline, body, tag: "maroon-queue" });
     fireAndForget(`push ${kind} #${guest.number}`, async () => {
       try {
         await webpush.sendNotification(sub, payload);
@@ -262,8 +268,8 @@ function notifyGuest(guest, kind) {
         from: `"Maroon Clothing" <${SMTP_FROM}>`,
         to,
         subject: copy.subject(guest),
-        text,
-        html: emailHtml(guest, copy.headline, text),
+        text: emailPlainText(guest, copy.headline, body),
+        html: emailHtml(guest, copy.headline, body),
       });
       return true;
     });
@@ -560,7 +566,7 @@ app.listen(PORT, () => {
   if (EMAIL_ENABLED) {
     console.log("Email notifications: enabled (SMTP)");
     mailer.verify().catch((e) => {
-      console.error("SMTP verify failed (emails may not send):", e.message);
+      console.error("SMTP verify failed (emails may not send):", e.message + smtpCertHint(e) + smtpAuthHint(e));
     });
   } else {
     console.log("SMTP not configured: email notifications disabled (set SMTP_HOST, SMTP_USER, SMTP_PASS).");

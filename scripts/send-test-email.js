@@ -2,12 +2,12 @@
  * Sends one test email using the same SMTP env vars as server.js, so you
  * can check a Gmail (or any SMTP) setup before opening the queue.
  *
- * Usage: SMTP_HOST=... SMTP_USER=... SMTP_PASS=... npm run test-email -- you@example.com
+ * Usage: npm run test-email -- you@example.com
  */
 
 require("./load-env").loadEnvFiles();
 
-const nodemailer = require("nodemailer");
+const { createSmtpTransport, smtpCertHint, smtpAuthHint } = require("./smtp-transport");
 
 const to = process.argv[2];
 if (!to) {
@@ -16,19 +16,14 @@ if (!to) {
 }
 
 const { SMTP_HOST, SMTP_USER, SMTP_PASS, SMTP_FROM } = process.env;
-const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587", 10);
 
 if (!SMTP_HOST || !SMTP_USER || !SMTP_PASS) {
   console.error("Set SMTP_HOST, SMTP_USER and SMTP_PASS first. See .env.example for the Gmail example.");
   process.exit(1);
 }
 
-const transport = nodemailer.createTransport({
-  host: SMTP_HOST,
-  port: SMTP_PORT,
-  secure: SMTP_PORT === 465,
-  auth: { user: SMTP_USER, pass: SMTP_PASS },
-});
+const transport = createSmtpTransport();
+console.log(`Sending test email via ${SMTP_HOST} as ${SMTP_USER} ...`);
 
 transport
   .sendMail({
@@ -41,6 +36,6 @@ transport
     console.log(`Test email sent to ${to}. Go check the inbox (and the spam folder, just in case).`);
   })
   .catch((e) => {
-    console.error("Send failed:", e.message);
+    console.error("Send failed:", e.message + smtpCertHint(e) + smtpAuthHint(e));
     process.exit(1);
   });
