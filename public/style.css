@@ -585,6 +585,58 @@ button.loading { opacity: 0.65; pointer-events: none; }
   min-height: 18px;
   margin-top: 8px;
 }
+.channel-note.channel-empty {
+  min-height: 0;
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid rgba(241, 235, 235, 0.1);
+}
+
+/* ----- iOS "add to home screen" install panel ----- */
+.install-panel {
+  margin: 12px 0 4px;
+  padding: 14px 16px;
+  background: rgba(214, 192, 177, 0.08);
+  border: 1px solid rgba(214, 192, 177, 0.32);
+  border-radius: 4px;
+}
+.install-panel > strong {
+  display: block;
+  font-size: 13px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--sand);
+  margin-bottom: 10px;
+}
+.install-steps {
+  margin: 0;
+  padding-left: 20px;
+}
+.install-steps li {
+  font-size: 14px;
+  color: var(--cream);
+  line-height: 1.5;
+  margin-bottom: 6px;
+}
+.install-steps b { color: var(--sand); font-weight: 400; }
+.ios-share {
+  display: inline-block;
+  border: 1px solid var(--hairline);
+  border-radius: 4px;
+  padding: 0 7px;
+  font-size: 12px;
+  letter-spacing: 1px;
+  color: var(--sand);
+  background: rgba(241, 235, 235, 0.06);
+}
+.install-alt {
+  margin: 12px 0 0;
+  font-size: 13px;
+  font-style: italic;
+  color: var(--cream-dim);
+  line-height: 1.4;
+}
+.install-alt b { color: var(--sand); font-style: normal; font-weight: 400; }
 
 /* ----- the Maroon Ticket ----- */
 .ticket-section { margin-top: 20px; }

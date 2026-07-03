@@ -172,35 +172,54 @@
     playChime();
   }
 
+  // True when Web Push could work here now or after a Home Screen install.
+  function browserAlertsAvailable() {
+    return "Notification" in window || (isIos() && !isStandalone());
+  }
+
   function reflectNotifPermission() {
     const btn = $("notifBtn");
     const stateEl = $("notifState");
-    const hint = $("iosHint");
+    const install = $("iosInstall");
     if (!btn || !stateEl) return;
+
+    const iosNeedsInstall = isIos() && !isStandalone();
+
+    // iOS only exposes Web Push once the app is on the Home Screen, so the
+    // Notification API is simply missing in a normal Safari tab. Instead of a
+    // dead "not supported", walk the guest through installing.
     if (!("Notification" in window)) {
       btn.hidden = true;
       stateEl.hidden = false;
-      stateEl.textContent = "Not on this browser";
-      if (hint) hint.hidden = !(isIos() && !isStandalone());
+      stateEl.classList.remove("linked");
+      if (iosNeedsInstall) {
+        stateEl.textContent = "Add to Home Screen";
+        if (install) install.hidden = false;
+      } else {
+        stateEl.textContent = "Not in this browser";
+        if (install) install.hidden = true;
+      }
       return;
     }
+
     const p = Notification.permission;
     if (p === "granted") {
       btn.hidden = true;
       stateEl.hidden = false;
       stateEl.textContent = "On";
       stateEl.classList.add("linked");
-      if (hint) hint.hidden = true;
+      if (install) install.hidden = true;
     } else if (p === "denied") {
       btn.hidden = true;
       stateEl.hidden = false;
       stateEl.textContent = "Blocked in browser";
       stateEl.classList.remove("linked");
-      if (hint) hint.hidden = true;
+      if (install) install.hidden = true;
     } else {
       btn.hidden = false;
       stateEl.hidden = true;
-      if (hint) hint.hidden = !(isIos() && !isStandalone());
+      // Standalone iOS is already installed; only nudge from a Safari tab.
+      if (install) install.hidden = !iosNeedsInstall;
     }
   }
 
@@ -224,6 +243,15 @@
     if (channels) emailLinked = !!channels.email;
     updateEmailRow();
     reflectNotifPermission();
+
+    // Only show the browser row where alerts can actually work (now or after a
+    // Home Screen install); otherwise it's just a confusing dead button.
+    const browserOk = browserAlertsAvailable();
+    $("rowBrowser").hidden = !browserOk;
+    // If nothing at all is switched on for this event, say so plainly rather
+    // than leaving the guest staring at an empty, broken-looking card.
+    const anyChannel = browserOk || emailEnabled || !!botUsername;
+    $("noChannels").hidden = anyChannel;
     // Self-heal: if permission is already granted but the server lost the
     // subscription (cleared data, expired endpoint), quietly resubscribe.
     // Throttled so a permanently failing browser doesn't retry every poll.
