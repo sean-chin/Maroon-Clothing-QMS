@@ -1,6 +1,6 @@
 # Paint the Town Maroon - Queue Manager
 
-Digital queue for the Maroon Clothing pop-up (11-12 July, 1-8pm). Guests join on their phone, roam the mall, and get pinged on up to three channels (browser alerts, Telegram, email) when it's almost their turn and again when it's their turn. The queue manager runs everything from a simple dashboard.
+Digital queue for the Maroon Clothing pop-up (11 & 12 July, 1pm to 8pm). Guests join on their phone, roam the mall, and get pinged on up to three channels (browser alerts, Telegram, email) when it's almost their turn and again when it's their turn. The queue manager runs everything from a simple dashboard.
 
 ## How it works
 
@@ -19,6 +19,12 @@ Guests get two nudges: a **heads-up** when roughly 5 minutes remain (when `ALMOS
 
 Every remote send is fire-and-forget with one retry after ~3 seconds: a Telegram or SMTP outage is logged and never blocks or delays the queue. A channel with missing config simply stays off; the queue itself never depends on any of them.
 
+## The Maroon Ticket
+
+Every guest with a spot gets a shareable, story-sized ticket rendered right on their status page: their queue number, their name, the oval badge and the event details in full Maroon branding. They can save it as a PNG or share it straight to their story.
+
+**Golden ticket rule (staff, read this):** every queue number divisible by 25 (25, 50, 75, ...) gets a gold ticket instead, and the copy tells the guest to show it at the door for a little surprise from Maroon. Those rows are marked with a **Gold** chip in the dashboard queue table, so expect a golden ticket to appear at the entrance and have the surprise ready.
+
 ## Stability
 
 - Single Node process, no database to fail. State is snapshotted atomically to `data/queue.json` on every change, so a crash or restart restores the full queue.
@@ -36,14 +42,14 @@ npm start
 
 Then open:
 
-- **Guest page** — http://localhost:3000
-- **Manager dashboard** — http://localhost:3000/admin
+- **Guest page**: http://localhost:3000
+- **Manager dashboard**: http://localhost:3000/admin
 
 The dashboard asks for a **Manager PIN**. It defaults to `maroon2026` (set your own with `ADMIN_PIN`, see below). The PIN can contain **letters and numbers**, and the login screen has a "Show" button so you can double-check it on your phone.
 
 ### Configuration (optional)
 
-All settings are environment variables; the app runs fine with the defaults if you set nothing. It does **not** auto-load a `.env` file, so export the variables in your shell before `npm start`. See `.env.example` for the full list (`ADMIN_PIN`, `PORT`, `STORE_CAPACITY`, `GUESTS_PER_MINUTE`, `ALMOST_AHEAD`, Telegram tokens, SMTP settings).
+All settings are environment variables, and the app runs fine with the defaults if you set nothing. It does **not** auto-load a `.env` file, so export the variables in your shell before `npm start`. See `.env.example` for the full list (`ADMIN_PIN`, `PORT`, `STORE_CAPACITY`, `GUESTS_PER_MINUTE`, `ALMOST_AHEAD`, Telegram tokens, SMTP settings).
 
 **macOS / Linux (bash/zsh):**
 ```bash

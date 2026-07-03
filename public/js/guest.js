@@ -224,6 +224,7 @@
     $("closedCard").hidden = true;
     $("statusCard").hidden = false;
     $("notifyCard").hidden = false;
+    $("lineupCard").hidden = false;
     updateChannelRows(null);
     startPolling();
   }
@@ -267,6 +268,12 @@
 
       $("qNumber").textContent = s.number;
       $("guestName").textContent = s.name;
+
+      // The Maroon Ticket: every 25th number in line is golden
+      if (window.MaroonTicket) {
+        const golden = s.number % 25 === 0 && s.number !== 0;
+        window.MaroonTicket.render(s.number, s.name, golden);
+      }
       $("ahead").textContent = s.ahead;
       $("est").textContent = s.estMinutes;
 
@@ -284,7 +291,9 @@
         localStorage.removeItem("maroonToken");
         $("statusCard").hidden = true;
         $("notifyCard").hidden = true;
+        $("lineupCard").hidden = true;
         $("thanksCard").hidden = false;
+        window.MaroonTicket?.hide();
       }
     } catch (e) {
       failStreak += 1;
@@ -295,9 +304,11 @@
         token = null;
         $("statusCard").hidden = true;
         $("notifyCard").hidden = true;
+        $("lineupCard").hidden = true;
         $("joinCard").hidden = !queueOpen;
         $("closedCard").hidden = queueOpen;
         $("sessionError").hidden = false;
+        window.MaroonTicket?.hide();
       }
     } finally {
       pollInFlight = false;
