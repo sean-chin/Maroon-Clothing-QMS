@@ -14,6 +14,8 @@
  * disables a channel; the queue itself never depends on any of them.
  */
 
+require("./scripts/load-env").loadEnvFiles();
+
 const express = require("express");
 const fs = require("fs");
 const path = require("path");
@@ -379,6 +381,7 @@ app.post("/api/join", rateLimit(10), (req, res) => {
   state.guests.push(guest);
   save();
   sweepHeadsUp();
+  if (guest.email) notifyGuest(guest, "linked");
   res.json({ token: guest.token, number: guest.number });
 });
 
@@ -425,6 +428,7 @@ app.post("/api/contact/:token", rateLimit(10), (req, res) => {
     guest.email = email;
   }
   save();
+  if (guest.email) notifyGuest(guest, "linked");
   res.json({ ok: true, email: guest.email });
 });
 
@@ -553,6 +557,14 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`Paint the Town Maroon queue running on http://localhost:${PORT}`);
   if (!BOT_TOKEN) console.log("TELEGRAM_BOT_TOKEN not set: Telegram notifications disabled.");
-  if (!EMAIL_ENABLED) console.log("SMTP not configured: email notifications disabled (set SMTP_HOST, SMTP_USER, SMTP_PASS).");
-  if (!PUSH_ENABLED) console.log("VAPID keys not set: push notifications disabled (run `npm run vapid-keys` and set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY).");
+  if (EMAIL_ENABLED) {
+    console.log("Email notifications: enabled (SMTP)");
+    mailer.verify().catch((e) => {
+      console.error("SMTP verify failed (emails may not send):", e.message);
+    });
+  } else {
+    console.log("SMTP not configured: email notifications disabled (set SMTP_HOST, SMTP_USER, SMTP_PASS).");
+  }
+  if (PUSH_ENABLED) console.log("Push notifications: enabled (VAPID)");
+  else console.log("VAPID keys not set: push notifications disabled (run `npm run vapid-keys` and set VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY).");
 });

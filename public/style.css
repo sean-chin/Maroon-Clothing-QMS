@@ -196,8 +196,16 @@ label {
   color: var(--cream-dim);
   margin-bottom: 8px;
 }
+.label-optional {
+  text-transform: none;
+  font-style: italic;
+  letter-spacing: 1px;
+  opacity: 0.85;
+}
+.join-email-field { margin-top: 4px; }
 
 input[type="text"],
+input[type="email"],
 input[type="password"],
 input[type="number"] {
   width: 100%;
@@ -211,6 +219,15 @@ input[type="number"] {
   margin-bottom: 16px;
 }
 input::placeholder { color: rgba(241, 235, 235, 0.32); font-style: italic; }
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--cream);
+  -webkit-box-shadow: 0 0 0 1000px rgba(241, 235, 235, 0.06) inset;
+  box-shadow: 0 0 0 1000px rgba(241, 235, 235, 0.06) inset;
+  border-color: var(--hairline);
+  transition: background-color 9999s ease-out 0s;
+}
 input:focus {
   outline: 1px solid var(--maroon-bright);
   border-color: var(--maroon-bright);

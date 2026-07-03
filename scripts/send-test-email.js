@@ -5,6 +5,8 @@
  * Usage: SMTP_HOST=... SMTP_USER=... SMTP_PASS=... npm run test-email -- you@example.com
  */
 
+require("./load-env").loadEnvFiles();
+
 const nodemailer = require("nodemailer");
 
 const to = process.argv[2];
