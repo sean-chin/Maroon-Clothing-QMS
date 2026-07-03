@@ -13,13 +13,15 @@ self.addEventListener("push", (event) => {
     data = { title: "Maroon", body: event.data ? event.data.text() : "" };
   }
   event.waitUntil(
-    self.registration.showNotification(data.title || "Maroon", {
-      body: data.body || "",
-      icon: "/assets/badge-oval.png",
-      badge: "/assets/badge-oval.png",
-      tag: data.tag || "maroon-queue",
-      vibrate: [200, 100, 200],
-    })
+    self.registration
+      .showNotification(data.title || "Maroon", {
+        body: data.body || "",
+        icon: "/assets/badge-oval.png",
+        badge: "/assets/badge-oval.png",
+        tag: data.tag || "maroon-queue",
+        vibrate: [200, 100, 200],
+      })
+      .catch((e) => console.error("Push notification display failed:", e))
   );
 });
 

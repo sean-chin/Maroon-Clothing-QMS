@@ -5,7 +5,20 @@
   let token = localStorage.getItem("maroonToken");
   let pollTimer = null;
   let pollInFlight = false;
-  let lastPhase = null;
+  function phaseStorageKey() {
+    return token ? "maroonPhase:" + token : null;
+  }
+
+  function loadStoredPhase() {
+    const k = phaseStorageKey();
+    return k ? sessionStorage.getItem(k) : null;
+  }
+
+  function storePhase(phase) {
+    const k = phaseStorageKey();
+    if (k) sessionStorage.setItem(k, phase);
+  }
+  let lastPhase = loadStoredPhase();
   let queueOpen = true;
   let failStreak = 0;
 
@@ -254,7 +267,7 @@
     btn.classList.toggle("loading", loading);
   }
 
-  function applyPhase(phase) {
+  function applyPhase(phase, channels) {
     const pill = $("statusPill");
     if (!pill) return;
     pill.textContent = PHASE_LABELS[phase] || phase;
@@ -272,12 +285,15 @@
       qNum.classList.toggle("queue-warm", phase === "almost");
     }
 
-    if (phase === "almost" && lastPhase !== "almost") {
+    // Server push already alerts the device; skip in-tab ping to avoid doubles.
+    const skipLocalPing = !!(channels && channels.push);
+
+    if (phase === "almost" && lastPhase !== "almost" && !skipLocalPing) {
       $("advancePanel").classList.add("pulse-once");
       setTimeout(() => $("advancePanel").classList.remove("pulse-once"), 2000);
       pingDevice("almost");
     }
-    if (phase === "yourTurn" && lastPhase !== "yourTurn") {
+    if (phase === "yourTurn" && lastPhase !== "yourTurn" && !skipLocalPing) {
       $("turnPanel").classList.add("pulse-once");
       setTimeout(() => $("turnPanel").classList.remove("pulse-once"), 2000);
       pingDevice("yourTurn");
@@ -286,6 +302,7 @@
     document.title = phase === "yourTurn" ? "YOUR TURN | Maroon" : baseTitle;
     $("notifyCard").hidden = phase === "inStore" || phase === "done";
     lastPhase = phase;
+    storePhase(phase);
   }
 
   async function loadConfig() {
@@ -312,6 +329,7 @@
     $("statusCard").hidden = false;
     $("notifyCard").hidden = false;
     $("lineupCard").hidden = false;
+    lastPhase = loadStoredPhase();
     updateChannelRows(null);
     startPolling();
   }
@@ -343,6 +361,7 @@
       });
       token = j.token;
       localStorage.setItem("maroonToken", token);
+      lastPhase = loadStoredPhase();
       if (email) {
         knownEmail = email;
         localStorage.setItem("maroonEmail", email);
@@ -380,7 +399,7 @@
         bar.style.width = pct + "%";
       }
 
-      applyPhase(s.phase);
+      applyPhase(s.phase, s.channels);
       updateChannelRows(s.channels);
 
       if (s.phase === "done") {

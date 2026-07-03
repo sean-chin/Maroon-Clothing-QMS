@@ -6,6 +6,6 @@
   "background_color": "#270707",
   "theme_color": "#660810",
   "icons": [
-    { "src": "assets/badge-oval.png", "sizes": "1024x819", "type": "image/jpeg" }
+    { "src": "assets/badge-oval.png", "sizes": "1024x819", "type": "image/png" }
   ]
 }

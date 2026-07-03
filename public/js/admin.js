@@ -41,7 +41,7 @@
     const b = (a, label, cls) =>
       `<button type="button" class="row-btn ${cls || ""}" data-id="${g.id}" data-action="${a}">${label}</button>`;
     if (g.status === "waiting")
-      return b("entered", "Entered") + b("noshow", "Remove", "secondary");
+      return b("noshow", "Remove", "secondary");
     if (g.status === "called")
       return (
         b("entered", "Entered") +

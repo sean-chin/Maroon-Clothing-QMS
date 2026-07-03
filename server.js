@@ -57,16 +57,39 @@ const DATA_DIR = path.join(__dirname, "data");
 const DATA_FILE = path.join(DATA_DIR, "queue.json");
 
 // ---------- state + persistence ----------
-let state = {
-  seq: 0, // last issued queue number
-  guests: [], // {id, token, number, name, status, joinedAt, calledAt, tgChat, email, pushSub, headsUpSent}
-  open: true,
-};
+const VALID_STATUSES = new Set(["waiting", "called", "inStore", "done", "noShow"]);
+
+function normalizeState(raw) {
+  if (!raw || typeof raw !== "object") {
+    return { seq: 0, guests: [], open: true, tgOffset: 0 };
+  }
+  const guests = Array.isArray(raw.guests) ? raw.guests : [];
+  const normalized = [];
+  for (const g of guests) {
+    if (!g || typeof g !== "object" || !g.id || !g.token) continue;
+    if (!VALID_STATUSES.has(g.status)) g.status = "done";
+    if (typeof g.number !== "number") g.number = 0;
+    if (!g.name) g.name = "Guest";
+    // Legacy field from older snapshots.
+    if (g.headsUpSent == null) g.headsUpSent = !!g.notifiedAlmost;
+    if (g.headsUpSent == null) g.headsUpSent = false;
+    delete g.notifiedAlmost;
+    normalized.push(g);
+  }
+  return {
+    seq: typeof raw.seq === "number" && raw.seq >= 0 ? raw.seq : 0,
+    guests: normalized,
+    open: raw.open !== false,
+    tgOffset: typeof raw.tgOffset === "number" && raw.tgOffset >= 0 ? raw.tgOffset : 0,
+  };
+}
+
+let state = { seq: 0, guests: [], open: true, tgOffset: 0 };
 // statuses: waiting -> called -> inStore -> done | noShow
 
 try {
   if (fs.existsSync(DATA_FILE)) {
-    state = JSON.parse(fs.readFileSync(DATA_FILE, "utf8"));
+    state = normalizeState(JSON.parse(fs.readFileSync(DATA_FILE, "utf8")));
     console.log(`Restored queue: ${state.guests.length} guests, seq ${state.seq}`);
   }
 } catch (e) {
@@ -74,20 +97,44 @@ try {
 }
 
 let saveTimer = null;
-function save() {
-  // Debounced atomic snapshot: write temp file then rename.
+function writeSnapshot() {
+  try {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+    const tmp = DATA_FILE + ".tmp";
+    fs.writeFileSync(tmp, JSON.stringify(state));
+    fs.renameSync(tmp, DATA_FILE);
+  } catch (e) {
+    console.error("Snapshot failed:", e.message);
+  }
+}
+
+// immediate=true writes synchronously (call-next, shutdown). Default debounces.
+function save(immediate) {
+  if (immediate) {
+    if (saveTimer) {
+      clearTimeout(saveTimer);
+      saveTimer = null;
+    }
+    writeSnapshot();
+    return;
+  }
   if (saveTimer) return;
   saveTimer = setTimeout(() => {
     saveTimer = null;
-    try {
-      fs.mkdirSync(DATA_DIR, { recursive: true });
-      const tmp = DATA_FILE + ".tmp";
-      fs.writeFileSync(tmp, JSON.stringify(state));
-      fs.renameSync(tmp, DATA_FILE);
-    } catch (e) {
-      console.error("Snapshot failed:", e.message);
-    }
+    writeSnapshot();
   }, 200);
+}
+
+function activeGuestCount() {
+  return state.guests.filter((g) => g.status === "waiting" || g.status === "called" || g.status === "inStore")
+    .length;
+}
+
+for (const sig of ["SIGTERM", "SIGINT"]) {
+  process.on(sig, () => {
+    save(true);
+    process.exit(0);
+  });
 }
 
 // ---------- helpers ----------
@@ -294,41 +341,65 @@ function sweepHeadsUp() {
 }
 
 // Long-poll getUpdates to link guests' Telegram chats via /start <token>.
-let tgOffset = 0;
+// tgOffset is persisted in state so restarts don't reprocess old updates.
 async function tgPollLoop() {
   if (!BOT_TOKEN) return;
   for (;;) {
-    const r = await tgApi("getUpdates", { offset: tgOffset, timeout: 25 });
-    if (r && r.ok) {
-      for (const u of r.result) {
-        tgOffset = u.update_id + 1;
-        const msg = u.message;
-        if (!msg || !msg.text) continue;
-        const m = msg.text.match(/^\/start\s+(\S+)/);
-        if (m) {
-          const guest = byToken(m[1]);
-          if (guest) {
-            guest.tgChat = msg.chat.id;
-            save();
-            notifyGuest(guest, "linked");
-          } else {
-            tgApi("sendMessage", {
-              chat_id: msg.chat.id,
-              text: "Hmm, that queue link doesn't look valid. Please rejoin the queue from the website.",
-            });
+    try {
+      const r = await tgApi("getUpdates", { offset: state.tgOffset, timeout: 25 });
+      if (r && r.ok) {
+        let offsetChanged = false;
+        for (const u of r.result) {
+          state.tgOffset = u.update_id + 1;
+          offsetChanged = true;
+          const msg = u.message;
+          if (!msg || !msg.text) continue;
+          const m = msg.text.match(/^\/start\s+(\S+)/);
+          if (m) {
+            const guest = byToken(m[1]);
+            if (guest) {
+              guest.tgChat = msg.chat.id;
+              save();
+              notifyGuest(guest, "linked");
+            } else {
+              fireAndForget("telegram invalid-link", async () => {
+                const reply = await tgApi("sendMessage", {
+                  chat_id: msg.chat.id,
+                  text: "Hmm, that queue link doesn't look valid. Please rejoin the queue from the website.",
+                });
+                return !!(reply && reply.ok);
+              });
+            }
           }
         }
+        if (offsetChanged) save();
+      } else {
+        await new Promise((res) => setTimeout(res, 5000));
       }
-    } else {
-      await new Promise((res) => setTimeout(res, 5000)); // back off on errors
+    } catch (e) {
+      console.error("Telegram poll error:", e.message);
+      await new Promise((res) => setTimeout(res, 5000));
     }
   }
 }
-tgPollLoop().catch((e) => console.error("Telegram poll loop died:", e.message));
+function startTgPoll() {
+  tgPollLoop().catch((e) => {
+    console.error("Telegram poll loop died:", e.message);
+    setTimeout(startTgPoll, 10_000);
+  });
+}
+startTgPoll();
 
 // ---------- app ----------
 const app = express();
+if (process.env.TRUST_PROXY !== "0") app.set("trust proxy", 1);
 app.use(express.json({ limit: "10kb" }));
+app.use((err, req, res, next) => {
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({ error: "Invalid request body." });
+  }
+  next(err);
+});
 app.use(express.static(path.join(__dirname, "public")));
 
 // Keep the process alive no matter what a request throws.
@@ -368,7 +439,7 @@ app.post("/api/join", rateLimit(10), (req, res) => {
   if (!state.open) return res.status(403).json({ error: "The queue is currently closed." });
   const name = String(req.body.name || "").trim().slice(0, 60);
   if (!name) return res.status(400).json({ error: "Please enter your name." });
-  if (state.guests.length >= 5000) return res.status(503).json({ error: "Queue is full." });
+  if (activeGuestCount() >= 5000) return res.status(503).json({ error: "Queue is full." });
   let email = null;
   if (EMAIL_ENABLED) {
     email = cleanEmail(req.body.email);
@@ -527,9 +598,10 @@ app.post("/api/admin/call-next", requireAdmin, (req, res) => {
   for (const g of next) {
     g.status = "called";
     g.calledAt = Date.now();
+    g.headsUpSent = true; // skip a late heads-up if they are requeued later
     notifyGuest(g, "yourTurn");
   }
-  save();
+  save(true);
   sweepHeadsUp();
   res.json({ called: next.map((g) => g.number) });
 });
@@ -538,7 +610,12 @@ app.post("/api/admin/guest/:id", requireAdmin, (req, res) => {
   const guest = byId(req.params.id);
   if (!guest) return res.status(404).json({ error: "Not found" });
   const action = req.body.action;
-  if (action === "entered") guest.status = "inStore";
+  if (action === "entered") {
+    if (guest.status !== "called") {
+      return res.status(400).json({ error: "Guest must be called before entering the store." });
+    }
+    guest.status = "inStore";
+  }
   else if (action === "done") guest.status = "done";
   else if (action === "noshow") guest.status = "noShow";
   else if (action === "requeue") {
@@ -559,8 +636,8 @@ app.post("/api/admin/open", requireAdmin, (req, res) => {
 });
 
 app.post("/api/admin/reset", requireAdmin, (_req, res) => {
-  state = { seq: 0, guests: [], open: true };
-  save();
+  state = { seq: 0, guests: [], open: true, tgOffset: state.tgOffset || 0 };
+  save(true);
   sweepHeadsUp();
   res.json({ ok: true });
 });
