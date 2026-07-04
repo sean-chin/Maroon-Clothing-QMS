@@ -19,7 +19,7 @@ async function main() {
   const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: settings, error: settingsErr } = await sb
     .from("queue_settings")
-    .select("id, seq, open")
+    .select("id, seq, open, tg_offset")
     .eq("id", 1)
     .maybeSingle();
   if (settingsErr) throw settingsErr;
@@ -37,6 +37,9 @@ async function main() {
   console.log("maroon_join_guest ok, number:", guest.number);
 
   await sb.from("guests").delete().eq("id", testId);
+  await sb.rpc("maroon_reset_queue");
+  const offset = settings.tg_offset || 0;
+  await sb.from("queue_settings").update({ tg_offset: offset }).eq("id", 1);
   console.log("Cleanup ok. Supabase queue store is ready.");
 }
 
