@@ -132,12 +132,15 @@ If it lands (check spam once), the app is good to go.
 
 ### Going live for the event
 
-Guests need a public URL (QR code at the store entrance works great). Easiest options:
+Guests need a public URL (QR code at the store entrance works great).
 
-- Deploy to a small VM / Render / Railway / Fly.io (any Node host with a persistent disk for `data/`).
-- Or run locally and expose with a tunnel (e.g. `cloudflared tunnel`) for a zero-deploy setup.
+**Vercel:** set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in project env (service role only — never in the browser). Run `supabase/migrations/20250704120000_queue_schema.sql` once in the Supabase SQL editor, then redeploy. Telegram switches to webhooks automatically on Vercel.
 
-Note: it's a single-process design (in-memory state), so run exactly one instance; don't use serverless/multi-instance hosting.
+**VM / Railway / Render / Fly.io:** works with or without Supabase. Without it, run exactly one instance with persistent `data/`.
+
+**Quick tunnel:** run locally and expose via Cloudflare Tunnel.
+
+Without Supabase on multi-instance hosts, queue state will not stay consistent. See `.env.example`.
 
 ## Branding
 
