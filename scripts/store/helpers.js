@@ -9,6 +9,7 @@ function normalizeGuest(raw) {
   if (g.headsUpSent == null) g.headsUpSent = !!g.notifiedAlmost;
   if (g.headsUpSent == null) g.headsUpSent = false;
   delete g.notifiedAlmost;
+  delete g.tgChat;
   return g;
 }
 
@@ -22,7 +23,6 @@ function rowToGuest(row) {
     status: row.status,
     joinedAt: row.joined_at,
     calledAt: row.called_at,
-    tgChat: row.tg_chat,
     email: row.email,
     pushSub: row.push_sub,
     headsUpSent: row.heads_up_sent,
@@ -38,7 +38,6 @@ function guestToRow(g) {
     status: g.status,
     joined_at: g.joinedAt,
     called_at: g.calledAt,
-    tg_chat: g.tgChat,
     email: g.email,
     push_sub: g.pushSub,
     heads_up_sent: g.headsUpSent,
@@ -47,7 +46,7 @@ function guestToRow(g) {
 
 function normalizeState(raw) {
   if (!raw || typeof raw !== "object") {
-    return { seq: 0, guests: [], open: true, tgOffset: 0 };
+    return { seq: 0, guests: [], open: true };
   }
   const guests = Array.isArray(raw.guests) ? raw.guests : [];
   const normalized = [];
@@ -59,7 +58,6 @@ function normalizeState(raw) {
     seq: typeof raw.seq === "number" && raw.seq >= 0 ? raw.seq : 0,
     guests: normalized,
     open: raw.open !== false,
-    tgOffset: typeof raw.tgOffset === "number" && raw.tgOffset >= 0 ? raw.tgOffset : 0,
   };
 }
 
@@ -92,6 +90,22 @@ function guestPhase(guest, waiting, called, almostAhead, guestsPerMinute) {
   return "waiting";
 }
 
+// Guests who just crossed the "almost your turn" threshold, computed in a
+// single pass instead of recomputing positionInfo() (an O(n) scan) for
+// every waiting guest, which made a sweep O(n^2) and ran on every join.
+function computeHeadsUpCandidates(waiting, called, almostAhead) {
+  const sorted = [...waiting].sort((a, b) => a.number - b.number);
+  const calledLen = called.length;
+  const candidates = [];
+  for (let i = 0; i < sorted.length; i++) {
+    const g = sorted[i];
+    if (g.headsUpSent) continue;
+    const ahead = i + calledLen;
+    if (ahead <= almostAhead) candidates.push(g);
+  }
+  return candidates;
+}
+
 function activeGuestCount(guests) {
   return guests.filter(
     (g) => g.status === "waiting" || g.status === "called" || g.status === "inStore"
@@ -117,6 +131,7 @@ module.exports = {
   partitionGuests,
   positionInfo,
   guestPhase,
+  computeHeadsUpCandidates,
   activeGuestCount,
   slotsAvailable,
   suggestedCallCount,

@@ -6,6 +6,7 @@ const {
   partitionGuests,
   positionInfo,
   guestPhase,
+  computeHeadsUpCandidates,
   slotsAvailable,
   suggestedCallCount,
   normalizeGuest,
@@ -59,15 +60,15 @@ function client() {
 async function getSettings() {
   const { data, error } = await client()
     .from("queue_settings")
-    .select("seq, open, tg_offset")
+    .select("seq, open")
     .eq("id", 1)
     .maybeSingle();
   if (error) throw error;
   if (!data) {
     await client().from("queue_settings").insert({ id: 1 });
-    return { seq: 0, open: true, tgOffset: 0 };
+    return { seq: 0, open: true };
   }
-  return { seq: data.seq, open: data.open, tgOffset: data.tg_offset };
+  return { seq: data.seq, open: data.open };
 }
 
 async function loadActiveGuests() {
@@ -84,6 +85,8 @@ async function init() {
   console.log("Queue store: Supabase (Postgres)");
 }
 
+async function shutdown() {}
+
 async function getHealth() {
   const settings = await getSettings();
   const { count, error } = await client().from("guests").select("*", { count: "exact", head: true });
@@ -93,15 +96,6 @@ async function getHealth() {
 
 async function isOpen() {
   return (await getSettings()).open;
-}
-
-async function getTgOffset() {
-  return (await getSettings()).tgOffset;
-}
-
-async function setTgOffset(offset) {
-  const { error } = await client().from("queue_settings").update({ tg_offset: offset }).eq("id", 1);
-  if (error) throw error;
 }
 
 async function join({ name, email }) {
@@ -170,7 +164,7 @@ async function getStatusPayload(guest, { guestsPerMinute, almostAhead }) {
       };
     })(),
     advanceMinutes: 5,
-    channels: { telegram: !!guest.tgChat, email: !!guest.email, push: !!guest.pushSub },
+    channels: { email: !!guest.email, push: !!guest.pushSub },
   };
 }
 
@@ -204,7 +198,6 @@ async function getAdminState(capacity) {
         name: g.name,
         status: g.status,
         calledAt: g.calledAt,
-        telegram: !!g.tgChat,
         email: !!g.email,
         push: !!g.pushSub,
       })),
@@ -271,41 +264,37 @@ async function setOpen(open) {
 }
 
 async function reset() {
-  const offset = await getTgOffset();
   const { error } = await client().rpc("maroon_reset_queue");
   if (error) throw error;
-  await setTgOffset(offset);
 }
 
-async function sweepHeadsUp({ almostAhead, guestsPerMinute, onNotify }) {
+async function sweepHeadsUp({ almostAhead, onNotify }) {
   const active = await loadActiveGuests();
   const { waiting, called } = partitionGuests(active);
-  for (const g of waiting) {
-    if (g.headsUpSent) continue;
-    const { ahead } = positionInfo(g, waiting, called, guestsPerMinute, almostAhead);
-    if (ahead <= almostAhead) {
-      g.headsUpSent = true;
-      await updateGuest(g);
-      onNotify(g);
-    }
+  const candidates = computeHeadsUpCandidates(waiting, called, almostAhead);
+  for (const g of candidates) {
+    g.headsUpSent = true;
+    await updateGuest(g);
+    onNotify(g);
   }
 }
 
-async function linkTelegram(token, chatId) {
-  const guest = await findByToken(token);
-  if (!guest) return null;
-  guest.tgChat = chatId;
-  await updateGuest(guest);
-  return guest;
+async function hitRateLimit(key, windowMs, max) {
+  const { data, error } = await client().rpc("maroon_rate_limit_hit", {
+    p_key: key,
+    p_window_ms: windowMs,
+    p_max: max,
+  });
+  if (error) throw error;
+  return !!data;
 }
 
 module.exports = {
   backend: "supabase",
   init,
+  shutdown,
   getHealth,
   isOpen,
-  getTgOffset,
-  setTgOffset,
   join,
   findByToken,
   findById,
@@ -317,5 +306,5 @@ module.exports = {
   setOpen,
   reset,
   sweepHeadsUp,
-  linkTelegram,
+  hitRateLimit,
 };
