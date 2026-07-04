@@ -6,6 +6,7 @@ const {
   partitionGuests,
   positionInfo,
   guestPhase,
+  computeHeadsUpCandidates,
   activeGuestCount,
   slotsAvailable,
   suggestedCallCount,
@@ -14,10 +15,13 @@ const {
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
 const DATA_FILE = path.join(DATA_DIR, "queue.json");
 
-let state = { seq: 0, guests: [], open: true, tgOffset: 0 };
-let saveTimer = null;
+let state = { seq: 0, guests: [], open: true };
 
-function writeSnapshot() {
+// Every mutation is written to disk synchronously and immediately: queue
+// writes are low-frequency (guest actions, not polls), so there is no
+// meaningful cost to trading a debounce window for the guarantee that a
+// crash or restart never loses a committed guest-state change.
+function save() {
   try {
     fs.mkdirSync(DATA_DIR, { recursive: true });
     const tmp = DATA_FILE + ".tmp";
@@ -26,22 +30,6 @@ function writeSnapshot() {
   } catch (e) {
     console.error("Snapshot failed:", e.message);
   }
-}
-
-function save(immediate) {
-  if (immediate) {
-    if (saveTimer) {
-      clearTimeout(saveTimer);
-      saveTimer = null;
-    }
-    writeSnapshot();
-    return;
-  }
-  if (saveTimer) return;
-  saveTimer = setTimeout(() => {
-    saveTimer = null;
-    writeSnapshot();
-  }, 200);
 }
 
 function getPartitions() {
@@ -59,10 +47,14 @@ async function init() {
   }
   for (const sig of ["SIGTERM", "SIGINT"]) {
     process.on(sig, () => {
-      save(true);
+      save();
       process.exit(0);
     });
   }
+}
+
+async function shutdown() {
+  save();
 }
 
 async function getHealth() {
@@ -71,15 +63,6 @@ async function getHealth() {
 
 async function isOpen() {
   return state.open;
-}
-
-async function getTgOffset() {
-  return state.tgOffset;
-}
-
-async function setTgOffset(offset) {
-  state.tgOffset = offset;
-  save();
 }
 
 async function join({ name, email }) {
@@ -102,7 +85,6 @@ async function join({ name, email }) {
     status: "waiting",
     joinedAt: Date.now(),
     calledAt: null,
-    tgChat: null,
     email,
     pushSub: null,
     headsUpSent: false,
@@ -145,7 +127,7 @@ async function getStatusPayload(guest, { guestsPerMinute, almostAhead }) {
     estMinutes: phase === "waiting" || phase === "almost" ? estMinutes : 0,
     aheadMax,
     advanceMinutes: 5,
-    channels: { telegram: !!guest.tgChat, email: !!guest.email, push: !!guest.pushSub },
+    channels: { email: !!guest.email, push: !!guest.pushSub },
   };
 }
 
@@ -176,7 +158,6 @@ async function getAdminState(capacity) {
         name: g.name,
         status: g.status,
         calledAt: g.calledAt,
-        telegram: !!g.tgChat,
         email: !!g.email,
         push: !!g.pushSub,
       })),
@@ -198,7 +179,7 @@ async function callNext(count, capacity) {
     g.calledAt = now;
     g.headsUpSent = true;
   }
-  save(true);
+  save();
   return { called: toCall, numbers: toCall.map((g) => g.number) };
 }
 
@@ -238,40 +219,58 @@ async function setOpen(open) {
 }
 
 async function reset() {
-  state = { seq: 0, guests: [], open: true, tgOffset: state.tgOffset || 0 };
-  save(true);
-}
-
-async function sweepHeadsUp({ almostAhead, guestsPerMinute, onNotify }) {
-  const { waiting, called } = getPartitions();
-  let changed = false;
-  for (const g of waiting) {
-    if (g.headsUpSent) continue;
-    const { ahead } = positionInfo(g, waiting, called, guestsPerMinute, almostAhead);
-    if (ahead <= almostAhead) {
-      g.headsUpSent = true;
-      changed = true;
-      onNotify(g);
+  try {
+    if (state.guests.length) {
+      fs.mkdirSync(DATA_DIR, { recursive: true });
+      const archivePath = path.join(DATA_DIR, `queue-archive-${Date.now()}.json`);
+      fs.writeFileSync(archivePath, JSON.stringify(state));
     }
+  } catch (e) {
+    console.error("Archive before reset failed:", e.message);
   }
-  if (changed) save();
+  state = { seq: 0, guests: [], open: true };
+  save();
 }
 
-async function linkTelegram(token, chatId) {
-  const guest = await findByToken(token);
-  if (!guest) return null;
-  guest.tgChat = chatId;
+async function sweepHeadsUp({ almostAhead, onNotify }) {
+  const { waiting, called } = getPartitions();
+  const candidates = computeHeadsUpCandidates(waiting, called, almostAhead);
+  if (!candidates.length) return;
+  for (const g of candidates) {
+    g.headsUpSent = true;
+    onNotify(g);
+  }
   save();
-  return guest;
+}
+
+// Fixed-window rate limiter, per process. Good enough for the single-
+// instance file-store deployment; Supabase mode uses a Postgres-backed
+// version so limits hold across multiple instances.
+const rateLimitState = new Map();
+setInterval(() => {
+  const cutoff = Date.now() - 10 * 60_000;
+  for (const [key, entry] of rateLimitState) {
+    if (entry.windowStart < cutoff) rateLimitState.delete(key);
+  }
+}, 5 * 60_000).unref();
+
+async function hitRateLimit(key, windowMs, max) {
+  const now = Date.now();
+  const entry = rateLimitState.get(key);
+  if (!entry || now - entry.windowStart >= windowMs) {
+    rateLimitState.set(key, { windowStart: now, count: 1 });
+    return true;
+  }
+  entry.count += 1;
+  return entry.count <= max;
 }
 
 module.exports = {
   backend: "file",
   init,
+  shutdown,
   getHealth,
   isOpen,
-  getTgOffset,
-  setTgOffset,
   join,
   findByToken,
   findById,
@@ -283,5 +282,5 @@ module.exports = {
   setOpen,
   reset,
   sweepHeadsUp,
-  linkTelegram,
+  hitRateLimit,
 };
