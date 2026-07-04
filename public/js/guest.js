@@ -20,8 +20,10 @@
   }
   let lastPhase = loadStoredPhase();
   let queueOpen = true;
+  let failStreak = 0;
 
   // Notification channels
+  let botUsername = "";
   let emailEnabled = false;
   let knownEmail = localStorage.getItem("maroonEmail") || "";
   let emailLinked = false;
@@ -225,6 +227,13 @@
   }
 
   function updateChannelRows(channels) {
+    if (botUsername && token) {
+      $("rowTelegram").hidden = false;
+      $("tgLink").href = "https://t.me/" + botUsername + "?start=" + token;
+      const linked = !!(channels && channels.telegram);
+      $("tgLink").hidden = linked;
+      $("tgState").hidden = !linked;
+    }
     if (channels) emailLinked = !!channels.email;
     updateEmailRow();
     reflectNotifPermission();
@@ -300,6 +309,7 @@
     try {
       const cfg = await request("/api/config", { retries: 2 });
       queueOpen = cfg.open;
+      botUsername = cfg.botUsername || "";
       emailEnabled = !!cfg.emailEnabled;
       vapidPublicKey = cfg.vapidPublicKey || "";
       $("eventCapacity").textContent = cfg.capacity;
@@ -369,6 +379,7 @@
     pollInFlight = true;
     try {
       const s = await request("/api/status/" + token, { retries: 1 });
+      failStreak = 0;
       setConn(true);
 
       $("qNumber").textContent = s.number;
@@ -401,15 +412,9 @@
         window.MaroonTicket?.hide();
       }
     } catch (e) {
+      failStreak += 1;
       setConn(false);
-      // Only a real 404 means this guest's spot is actually gone (they left,
-      // or the queue was reset) -- clear the session then. A guest roaming
-      // the mall on spotty cellular will otherwise rack up consecutive
-      // network failures and get silently kicked to "spot expired," losing
-      // their place even though the server still holds it. Any other
-      // failure just keeps retrying; setConn(false) already shows
-      // "Reconnecting" so the guest knows something's off.
-      if (e.status === 404) {
+      if (e.status === 404 || failStreak >= 8) {
         stopPolling();
         localStorage.removeItem("maroonToken");
         token = null;
