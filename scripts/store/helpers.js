@@ -6,6 +6,7 @@ function normalizeGuest(raw) {
   if (!VALID_STATUSES.has(g.status)) g.status = "done";
   if (typeof g.number !== "number") g.number = 0;
   if (!g.name) g.name = "Guest";
+  if (!g.phone) g.phone = "";
   if (g.headsUpSent == null) g.headsUpSent = !!g.notifiedAlmost;
   if (g.headsUpSent == null) g.headsUpSent = false;
   delete g.notifiedAlmost;
@@ -19,6 +20,7 @@ function rowToGuest(row) {
     token: row.token,
     number: row.number,
     name: row.name,
+    phone: row.phone,
     status: row.status,
     joinedAt: row.joined_at,
     calledAt: row.called_at,
@@ -35,6 +37,7 @@ function guestToRow(g) {
     token: g.token,
     number: g.number,
     name: g.name,
+    phone: g.phone,
     status: g.status,
     joined_at: g.joinedAt,
     called_at: g.calledAt,

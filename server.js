@@ -67,6 +67,11 @@ function cleanEmail(raw) {
   return /^\S+@\S+\.\S+$/.test(e) ? e : null;
 }
 
+function cleanPhone(raw) {
+  const p = String(raw || "").trim().slice(0, 20);
+  return /^\+?[\d\s-()]{8,20}$/.test(p) ? p : null;
+}
+
 // ---------- telegram ----------
 async function tgApi(method, body) {
   if (!BOT_TOKEN) return null;
@@ -325,6 +330,13 @@ app.get("/api/config", asyncRoute(async (_req, res) => {
 app.post("/api/join", rateLimit(10), asyncRoute(async (req, res) => {
   const name = String(req.body.name || "").trim().slice(0, 60);
   if (!name) return res.status(400).json({ error: "Please enter your name." });
+  const phone = cleanPhone(req.body.phone);
+  if (!phone) {
+    const msg = String(req.body.phone || "").trim()
+      ? "That handphone number doesn't look right. Give it another go!"
+      : "Drop your handphone number so we can reach you.";
+    return res.status(400).json({ error: msg });
+  }
   let email = null;
   if (EMAIL_ENABLED) {
     email = cleanEmail(req.body.email);
@@ -338,7 +350,7 @@ app.post("/api/join", rateLimit(10), asyncRoute(async (req, res) => {
     email = cleanEmail(req.body.email);
   }
   try {
-    const guest = await store.join({ name, email });
+    const guest = await store.join({ name, phone, email });
     await runSweep();
     if (guest.email) notifyGuest(guest, "linked");
     res.json({ token: guest.token, number: guest.number });

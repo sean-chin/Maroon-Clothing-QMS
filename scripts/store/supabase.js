@@ -104,13 +104,14 @@ async function setTgOffset(offset) {
   if (error) throw error;
 }
 
-async function join({ name, email }) {
+async function join({ name, phone, email }) {
   const id = crypto.randomUUID();
   const token = crypto.randomBytes(12).toString("hex");
   const { data, error } = await client().rpc("maroon_join_guest", {
     p_id: id,
     p_token: token,
     p_name: name,
+    p_phone: phone,
     p_email: email,
   });
   if (error) {
@@ -202,6 +203,7 @@ async function getAdminState(capacity) {
         id: g.id,
         number: g.number,
         name: g.name,
+        phone: g.phone,
         status: g.status,
         calledAt: g.calledAt,
         telegram: !!g.tgChat,

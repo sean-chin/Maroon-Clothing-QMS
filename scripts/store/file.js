@@ -82,7 +82,7 @@ async function setTgOffset(offset) {
   save();
 }
 
-async function join({ name, email }) {
+async function join({ name, phone, email }) {
   if (!state.open) {
     const err = new Error("The queue is currently closed.");
     err.code = "queue_closed";
@@ -99,6 +99,7 @@ async function join({ name, email }) {
     token: crypto.randomBytes(12).toString("hex"),
     number: state.seq,
     name,
+    phone,
     status: "waiting",
     joinedAt: Date.now(),
     calledAt: null,
@@ -174,6 +175,7 @@ async function getAdminState(capacity) {
         id: g.id,
         number: g.number,
         name: g.name,
+        phone: g.phone,
         status: g.status,
         calledAt: g.calledAt,
         telegram: !!g.tgChat,
