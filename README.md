@@ -4,8 +4,8 @@ Digital queue for the Maroon Clothing pop-up (11 & 12 July, 1pm to 8pm). Guests 
 
 ## How it works
 
-- **Guest page (`/`)**: guest enters their name (plus an optional email), gets a queue number, sees how many guests are ahead and a rough wait estimate. Page auto-refreshes every few seconds. A "Never miss your call" card lets them switch on push notifications, link the Telegram bot, or add an email, then go roam the mall.
-- **Manager dashboard (`/admin`)**: PIN-protected. Shows waiting / called / in-store counts. When guests leave the store, the manager calls the next N guests; those guests instantly get the "it's your turn" ping on every channel they linked. Manager then marks them **Entered**, **Left store**, **No-show**, or **Re-queue**. Small PUSH / TG / @ chips in the queue table show who gets pinged remotely.
+- **Guest page (`/`)**: guest enters their name and handphone number (required, plus an optional email), gets a queue number, sees how many guests are ahead and a rough wait estimate. Page auto-refreshes every few seconds. A "Never miss your call" card lets them switch on push notifications, link the Telegram bot, or add an email, then go roam the mall.
+- **Manager dashboard (`/admin`)**: PIN-protected. Shows waiting / called / in-store counts, plus each guest's name and handphone number. When guests leave the store, the manager calls the next N guests; those guests instantly get the "it's your turn" ping on every channel they linked. Manager then marks them **Entered**, **Left store**, **No-show**, or **Re-queue**. Small PUSH / TG / @ chips in the queue table show who gets pinged remotely.
 
 Statuses flow: `waiting -> called -> in store -> done` (or `no-show`).
 

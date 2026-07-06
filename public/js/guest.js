@@ -341,6 +341,15 @@
       $("joinError").textContent = "Drop your name so we know it's you.";
       return;
     }
+    const phone = ($("phone").value || "").trim();
+    if (!phone) {
+      $("joinError").textContent = "Drop your handphone number so we can reach you.";
+      return;
+    }
+    if (!/^\+?[\d\s-()]{8,20}$/.test(phone)) {
+      $("joinError").textContent = "That handphone number doesn't look right. Give it another go!";
+      return;
+    }
     const email = emailEnabled ? ($("joinEmail").value || "").trim().toLowerCase() : "";
     if (emailEnabled) {
       if (!email) {
@@ -357,7 +366,7 @@
       const j = await request("/api/join", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(emailEnabled ? { name, email } : { name }),
+        body: JSON.stringify(emailEnabled ? { name, phone, email } : { name, phone }),
       });
       token = j.token;
       localStorage.setItem("maroonToken", token);
