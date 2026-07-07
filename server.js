@@ -7,10 +7,10 @@
  *
  * Notifications: multi-channel and fire-and-forget. Guests can get push
  * notifications (works even with the tab closed, on Android and on iOS once
- * added to the home screen), Telegram messages, and emails at the "almost
- * your turn" and "your turn" moments. Every remote send has one retry and
- * can never throw or block a queue operation. Missing config simply
- * disables a channel; the queue itself never depends on any of them.
+ * added to the home screen) and emails at the "almost your turn" and "your
+ * turn" moments. Every remote send has one retry and can never throw or
+ * block a queue operation. Missing config simply disables a channel; the
+ * queue itself never depends on any of them.
  */
 
 require("./scripts/load-env").loadEnvFiles();
@@ -26,14 +26,9 @@ const store = require("./scripts/store");
 // ---------- config ----------
 const PORT = process.env.PORT || 3000;
 const ADMIN_PIN = process.env.ADMIN_PIN || "maroon2026";
-const BOT_TOKEN = process.env.TELEGRAM_BOT_TOKEN || "";
-const BOT_USERNAME = process.env.TELEGRAM_BOT_USERNAME || "";
 const STORE_CAPACITY = parseInt(process.env.STORE_CAPACITY || "40", 10);
 const GUESTS_PER_MINUTE = parseFloat(process.env.GUESTS_PER_MINUTE || "2");
 const ALMOST_AHEAD = parseInt(process.env.ALMOST_AHEAD || "10", 10);
-const TELEGRAM_WEBHOOK_SECRET = process.env.TELEGRAM_WEBHOOK_SECRET || "";
-const USE_TELEGRAM_WEBHOOK =
-  process.env.TELEGRAM_USE_WEBHOOK === "1" || !!process.env.VERCEL;
 
 const SMTP_HOST = process.env.SMTP_HOST || "";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587", 10);
@@ -70,90 +65,6 @@ function cleanEmail(raw) {
 function cleanPhone(raw) {
   const p = String(raw || "").trim().slice(0, 20);
   return /^\+?[\d\s-()]{8,20}$/.test(p) ? p : null;
-}
-
-// ---------- telegram ----------
-async function tgApi(method, body) {
-  if (!BOT_TOKEN) return null;
-  try {
-    const res = await fetch(`https://api.telegram.org/bot${BOT_TOKEN}/${method}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-    });
-    return await res.json();
-  } catch (e) {
-    console.error(`Telegram ${method} failed:`, e.message);
-    return null;
-  }
-}
-
-async function handleTelegramMessage(msg) {
-  if (!msg || !msg.text) return;
-  const m = msg.text.match(/^\/start\s+(\S+)/);
-  if (!m) return;
-  const guest = await store.linkTelegram(m[1], msg.chat.id);
-  if (guest) {
-    notifyGuest(guest, "linked");
-  } else {
-    fireAndForget("telegram invalid-link", async () => {
-      const reply = await tgApi("sendMessage", {
-        chat_id: msg.chat.id,
-        text: "Hmm, that queue link doesn't look valid. Please rejoin the queue from the website.",
-      });
-      return !!(reply && reply.ok);
-    });
-  }
-}
-
-async function tgPollLoop() {
-  if (!BOT_TOKEN) return;
-  for (;;) {
-    try {
-      const offset = await store.getTgOffset();
-      const r = await tgApi("getUpdates", { offset, timeout: 25 });
-      if (r && r.ok) {
-        for (const u of r.result) {
-          await store.setTgOffset(u.update_id + 1);
-          await handleTelegramMessage(u.message);
-        }
-      } else {
-        await new Promise((res) => setTimeout(res, 5000));
-      }
-    } catch (e) {
-      console.error("Telegram poll error:", e.message);
-      await new Promise((res) => setTimeout(res, 5000));
-    }
-  }
-}
-
-function startTgPoll() {
-  tgPollLoop().catch((e) => {
-    console.error("Telegram poll loop died:", e.message);
-    setTimeout(startTgPoll, 10_000);
-  });
-}
-
-async function ensureTelegramWebhook() {
-  if (!BOT_TOKEN || !USE_TELEGRAM_WEBHOOK) return;
-  const host = process.env.VERCEL_URL
-    ? `https://${process.env.VERCEL_URL}`
-    : process.env.PUBLIC_URL || "";
-  if (!host) {
-    console.log("Telegram webhook: set PUBLIC_URL or deploy to Vercel to auto-register.");
-    return;
-  }
-  const url = `${host}/api/telegram/webhook`;
-  const info = await tgApi("getWebhookInfo", {});
-  if (info?.result?.url === url) {
-    console.log("Telegram webhook already set:", url);
-    return;
-  }
-  const body = { url, allowed_updates: ["message"] };
-  if (TELEGRAM_WEBHOOK_SECRET) body.secret_token = TELEGRAM_WEBHOOK_SECRET;
-  const r = await tgApi("setWebhook", body);
-  if (r?.ok) console.log("Telegram webhook registered:", url);
-  else console.error("Telegram setWebhook failed:", r?.description || "unknown");
 }
 
 // ---------- email ----------
@@ -252,14 +163,6 @@ function notifyGuest(guest, kind) {
     });
   }
 
-  if (BOT_TOKEN && guest.tgChat) {
-    const chatId = guest.tgChat;
-    fireAndForget(`telegram ${kind} #${guest.number}`, async () => {
-      const r = await tgApi("sendMessage", { chat_id: chatId, text });
-      return !!(r && r.ok);
-    });
-  }
-
   if (mailer && guest.email) {
     const to = guest.email;
     fireAndForget(`email ${kind} #${guest.number}`, async () => {
@@ -318,7 +221,6 @@ app.get("/api/health", asyncRoute(async (_req, res) => {
 
 app.get("/api/config", asyncRoute(async (_req, res) => {
   res.json({
-    botUsername: BOT_USERNAME,
     emailEnabled: EMAIL_ENABLED,
     vapidPublicKey: PUSH_ENABLED ? VAPID_PUBLIC_KEY : "",
     open: await store.isOpen(),
@@ -327,7 +229,10 @@ app.get("/api/config", asyncRoute(async (_req, res) => {
   });
 }));
 
-app.post("/api/join", rateLimit(10), asyncRoute(async (req, res) => {
+// Higher than the other guest endpoints: a mall Wi-Fi NAT can put dozens of
+// guests behind one public IP during the opening rush, and they all hit this
+// route once each (unlike status polling, which repeats per guest).
+app.post("/api/join", rateLimit(40), asyncRoute(async (req, res) => {
   const name = String(req.body.name || "").trim().slice(0, 60);
   if (!name) return res.status(400).json({ error: "Please enter your name." });
   const phone = cleanPhone(req.body.phone);
@@ -424,18 +329,6 @@ app.post("/api/push/unsubscribe/:token", rateLimit(10), asyncRoute(async (req, r
   res.json({ ok: true });
 }));
 
-app.post("/api/telegram/webhook", asyncRoute(async (req, res) => {
-  if (TELEGRAM_WEBHOOK_SECRET) {
-    const header = req.headers["x-telegram-bot-api-secret-token"];
-    if (header !== TELEGRAM_WEBHOOK_SECRET) {
-      return res.status(403).json({ error: "Forbidden" });
-    }
-  }
-  const msg = req.body?.message;
-  if (msg) await handleTelegramMessage(msg);
-  res.json({ ok: true });
-}));
-
 function requireAdmin(req, res, next) {
   if (req.headers["x-admin-pin"] === ADMIN_PIN) return next();
   res.status(401).json({ error: "Wrong PIN" });
@@ -502,15 +395,6 @@ async function boot() {
       "WARNING: Running on Vercel without Supabase. Queue state will NOT persist or sync across instances. " +
         "Set SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY."
     );
-  }
-  if (BOT_TOKEN) {
-    if (USE_TELEGRAM_WEBHOOK) {
-      ensureTelegramWebhook().catch((e) => console.error("Telegram webhook setup:", e.message));
-    } else {
-      startTgPoll();
-    }
-  } else {
-    console.log("TELEGRAM_BOT_TOKEN not set: Telegram notifications disabled.");
   }
   if (EMAIL_ENABLED) {
     console.log("Email notifications: enabled (SMTP)");

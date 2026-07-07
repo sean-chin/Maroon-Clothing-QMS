@@ -1,10 +1,10 @@
 # Paint the Town Maroon - Queue Manager
 
-Digital queue for the Maroon Clothing pop-up (11 & 12 July, 1pm to 8pm). Guests join on their phone, roam the mall, and get pinged on up to three channels (push notifications, Telegram, email) when it's almost their turn and again when it's their turn. The queue manager runs everything from a simple dashboard.
+Digital queue for the Maroon Clothing pop-up (11 & 12 July, 1pm to 8pm). Guests join on their phone, roam the mall, and get pinged on up to two channels (push notifications, email) when it's almost their turn and again when it's their turn. The queue manager runs everything from a simple dashboard.
 
 ## How it works
 
-- **Guest page (`/`)**: guest enters their name and handphone number (required, plus an optional email), gets a queue number, sees how many guests are ahead and a rough wait estimate. Page auto-refreshes every few seconds. A "Never miss your call" card lets them switch on push notifications, link the Telegram bot, or add an email, then go roam the mall.
+- **Guest page (`/`)**: guest enters their name and handphone number (required, plus an optional email), gets a queue number, sees how many guests are ahead and a rough wait estimate. Page auto-refreshes every few seconds. A "Never miss your call" card lets them switch on push notifications or add an email, then go roam the mall.
 - **Manager dashboard (`/admin`)**: PIN-protected. Shows waiting / called / in-store counts, plus each guest's name and handphone number. When guests leave the store, the manager calls the next N guests; those guests instantly get the "it's your turn" ping on every channel they linked. Manager then marks them **Entered**, **Left store**, **No-show**, or **Re-queue**. Small PUSH / TG / @ chips in the queue table show who gets pinged remotely.
 
 Statuses flow: `waiting -> called -> in store -> done` (or `no-show`).
@@ -14,12 +14,11 @@ Statuses flow: `waiting -> called -> in store -> done` (or `no-show`).
 Guests get two nudges: a **heads-up** when roughly 5 minutes remain (when `ALMOST_AHEAD` or fewer guests are ahead of them, tracked server-side so it fires exactly once, even across restarts) and a **your turn** ping the moment the manager calls them in. Both fan out to every channel the guest linked:
 
 - **Push notifications** (recommended, works with the tab closed): the guest taps "Turn on" once and their phone gets a real system notification, a vibration and a sound, even with the browser closed and the screen locked. On Android this works straight away. On iOS it needs the page added to the home screen first (iOS 16.4+); the guest page shows that hint automatically on iPhone. Needs `VAPID_PUBLIC_KEY` and `VAPID_PRIVATE_KEY` set (see below); without them the app falls back to a plain in-tab alert that only fires while the tab is open.
-- **Telegram** (optional): guests tap a deep link to the bot, which links their chat via `/start <token>`. Enabled by setting `TELEGRAM_BOT_TOKEN` and `TELEGRAM_BOT_USERNAME`.
 - **Email** (optional): guests add an email when joining or later from the status page. Sends a plain-text plus simple branded HTML message over SMTP. Enabled by setting the `SMTP_*` variables.
 
-Every remote send is fire-and-forget with one retry after ~3 seconds: a Telegram, SMTP, or push outage is logged and never blocks or delays the queue. A channel with missing config simply stays off; the queue itself never depends on any of them.
+Every remote send is fire-and-forget with one retry after ~3 seconds: an SMTP or push outage is logged and never blocks or delays the queue. A channel with missing config simply stays off; the queue itself never depends on any of them.
 
-For the most reliable setup, turn on all three: push covers guests who close the tab, Telegram and email are the backup in case a guest's browser blocks push (some in-app browsers do).
+For the most reliable setup, turn on both: push covers guests who close the tab, email is the backup in case a guest's browser blocks push (some in-app browsers do).
 
 ## The Maroon Ticket
 
@@ -31,7 +30,7 @@ Every guest with a spot gets a shareable, story-sized ticket rendered right on t
 
 - Single Node process, no database to fail. State is snapshotted atomically to `data/queue.json` on every change, so a crash or restart restores the full queue.
 - Per-IP rate limiting on guest endpoints; global error handlers so one bad request never takes the server down. 300 concurrent guests polling every 5s is ~60 req/s, trivial load.
-- Push, Telegram, and email sends are all fire-and-forget with a retry, so an outage on any of them never blocks the queue (guests still get the on-page status).
+- Push and email sends are both fire-and-forget with a retry, so an outage on either never blocks the queue (guests still get the on-page status).
 
 ## Setup
 
@@ -51,7 +50,7 @@ The dashboard asks for a **Manager PIN**. It defaults to `maroon2026` (set your 
 
 ### Configuration (optional)
 
-All settings are environment variables, and the app runs fine with the defaults if you set nothing. It does **not** auto-load a `.env` file, so export the variables in your shell before `npm start`. See `.env.example` for the full list (`ADMIN_PIN`, `PORT`, `STORE_CAPACITY`, `GUESTS_PER_MINUTE`, `ALMOST_AHEAD`, Telegram tokens, SMTP settings, VAPID keys).
+All settings are environment variables, and the app runs fine with the defaults if you set nothing. The app auto-loads `.env` then `.env.local` from the project root on startup (a variable already set in your shell always wins). See `.env.example` for the full list (`ADMIN_PIN`, `PORT`, `STORE_CAPACITY`, `GUESTS_PER_MINUTE`, `ALMOST_AHEAD`, SMTP settings, VAPID keys).
 
 **macOS / Linux (bash/zsh):**
 ```bash
@@ -84,26 +83,13 @@ This is the channel that actually reaches a guest roaming the mall with the phon
 
 **On the guest's phone:**
 - **Android (Chrome)**: tapping "Turn on" is enough. Push works even after the tab is closed.
-- **iPhone (Safari, iOS 16.4+)**: Safari only allows push for sites added to the home screen. The guest page detects this and shows a hint: tap Share, then "Add to Home Screen", open Maroon from the new icon, then tap "Turn on" from there. Older iOS versions can't receive push at all, browser alerts included, so lean on Telegram or email for those guests.
+- **iPhone (Safari, iOS 16.4+)**: Safari only allows push for sites added to the home screen. The guest page detects this and shows a hint: tap Share, then "Add to Home Screen", open Maroon from the new icon, then tap "Turn on" from there. Older iOS versions can't receive push at all, browser alerts included, so lean on email for those guests.
 
 Without `VAPID_PUBLIC_KEY`/`VAPID_PRIVATE_KEY` set, the "Browser alerts" toggle still works as a plain in-tab notification (sound, vibration, system alert) but only while the tab stays open and in view, exactly like before this channel existed.
 
-### Telegram notifications
-
-1. Message **@BotFather** on Telegram, `/newbot`, pick a name like "Maroon Queue".
-2. Copy the token and username into your environment (see `.env.example`), e.g. on macOS / Linux:
-   ```bash
-   TELEGRAM_BOT_TOKEN="123456:ABC..." TELEGRAM_BOT_USERNAME="MaroonQueueBot" npm start
-   ```
-   …or on Windows PowerShell:
-   ```powershell
-   $env:TELEGRAM_BOT_TOKEN="123456:ABC..."; $env:TELEGRAM_BOT_USERNAME="MaroonQueueBot"; npm start
-   ```
-Without a token the app still works fully, using browser (and, if configured, email) notifications only.
-
 ### Email notifications (SMTP)
 
-Set `SMTP_HOST`, `SMTP_USER` and `SMTP_PASS` (all three are required for email to switch on; without them the channel is silently disabled, exactly like Telegram without a token). `SMTP_PORT` defaults to `587` (STARTTLS; use `465` for implicit TLS) and `SMTP_FROM` defaults to `SMTP_USER`.
+Set `SMTP_HOST`, `SMTP_USER` and `SMTP_PASS` (all three are required for email to switch on; without them the channel is silently disabled). `SMTP_PORT` defaults to `587` (STARTTLS; use `465` for implicit TLS) and `SMTP_FROM` defaults to `SMTP_USER`.
 
 Gmail example: turn on 2-step verification for the Google account, create an **app password** at https://myaccount.google.com/apppasswords, then:
 
@@ -134,7 +120,7 @@ If it lands (check spam once), the app is good to go.
 
 Guests need a public URL (QR code at the store entrance works great).
 
-**Vercel:** set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in project env (service role only — never in the browser). Run `supabase/migrations/20250704120000_queue_schema.sql` once in the Supabase SQL editor, then redeploy. Telegram switches to webhooks automatically on Vercel.
+**Vercel:** set `SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` in project env (service role only — never in the browser). Run `supabase/migrations/*.sql` once in the Supabase SQL editor, then redeploy.
 
 **VM / Railway / Render / Fly.io:** works with or without Supabase. Without it, run exactly one instance with persistent `data/`.
 

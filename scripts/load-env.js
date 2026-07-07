@@ -21,6 +21,12 @@ function parseLine(line) {
   return { key, val };
 }
 
+// `vercel env pull` writes these into .env.local as a snapshot, but they're
+// only meaningful when injected live by Vercel's own runtime. Loading them
+// from a stale file locally makes the app think it's running on Vercel
+// (server.js checks process.env.VERCEL to decide whether to open a port).
+const VERCEL_RUNTIME_PREFIX = /^VERCEL/;
+
 function loadEnvFiles(root = path.join(__dirname, "..")) {
   for (const name of [".env", ".env.local"]) {
     const file = path.join(root, name);
@@ -28,6 +34,7 @@ function loadEnvFiles(root = path.join(__dirname, "..")) {
     for (const line of fs.readFileSync(file, "utf8").split(/\r?\n/)) {
       const parsed = parseLine(line);
       if (!parsed) continue;
+      if (VERCEL_RUNTIME_PREFIX.test(parsed.key)) continue;
       if (process.env[parsed.key] === undefined) {
         process.env[parsed.key] = parsed.val;
       }

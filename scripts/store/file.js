@@ -14,7 +14,7 @@ const {
 const DATA_DIR = path.join(__dirname, "..", "..", "data");
 const DATA_FILE = path.join(DATA_DIR, "queue.json");
 
-let state = { seq: 0, guests: [], open: true, tgOffset: 0 };
+let state = { seq: 0, guests: [], open: true };
 let saveTimer = null;
 
 function writeSnapshot() {
@@ -73,15 +73,6 @@ async function isOpen() {
   return state.open;
 }
 
-async function getTgOffset() {
-  return state.tgOffset;
-}
-
-async function setTgOffset(offset) {
-  state.tgOffset = offset;
-  save();
-}
-
 async function join({ name, phone, email }) {
   if (!state.open) {
     const err = new Error("The queue is currently closed.");
@@ -103,7 +94,6 @@ async function join({ name, phone, email }) {
     status: "waiting",
     joinedAt: Date.now(),
     calledAt: null,
-    tgChat: null,
     email,
     pushSub: null,
     headsUpSent: false,
@@ -146,7 +136,7 @@ async function getStatusPayload(guest, { guestsPerMinute, almostAhead }) {
     estMinutes: phase === "waiting" || phase === "almost" ? estMinutes : 0,
     aheadMax,
     advanceMinutes: 5,
-    channels: { telegram: !!guest.tgChat, email: !!guest.email, push: !!guest.pushSub },
+    channels: { email: !!guest.email, push: !!guest.pushSub },
   };
 }
 
@@ -178,7 +168,6 @@ async function getAdminState(capacity) {
         phone: g.phone,
         status: g.status,
         calledAt: g.calledAt,
-        telegram: !!g.tgChat,
         email: !!g.email,
         push: !!g.pushSub,
       })),
@@ -240,7 +229,7 @@ async function setOpen(open) {
 }
 
 async function reset() {
-  state = { seq: 0, guests: [], open: true, tgOffset: state.tgOffset || 0 };
+  state = { seq: 0, guests: [], open: true };
   save(true);
 }
 
@@ -259,21 +248,11 @@ async function sweepHeadsUp({ almostAhead, guestsPerMinute, onNotify }) {
   if (changed) save();
 }
 
-async function linkTelegram(token, chatId) {
-  const guest = await findByToken(token);
-  if (!guest) return null;
-  guest.tgChat = chatId;
-  save();
-  return guest;
-}
-
 module.exports = {
   backend: "file",
   init,
   getHealth,
   isOpen,
-  getTgOffset,
-  setTgOffset,
   join,
   findByToken,
   findById,
@@ -285,5 +264,4 @@ module.exports = {
   setOpen,
   reset,
   sweepHeadsUp,
-  linkTelegram,
 };

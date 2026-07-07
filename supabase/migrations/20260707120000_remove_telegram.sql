@@ -1,12 +1,8 @@
--- Add compulsory handphone number collection for guests joining the queue.
+-- Telegram notifications were removed from the app (not in use). Drop the
+-- now-unused columns and stop returning tg_chat from the join RPC.
 
-alter table public.guests add column if not exists phone text;
-update public.guests set phone = '' where phone is null;
-alter table public.guests alter column phone set default '';
-alter table public.guests alter column phone set not null;
-
--- Recreate maroon_join_guest to accept and persist the guest's phone number.
-drop function if exists public.maroon_join_guest(uuid, text, text, text);
+alter table public.queue_settings drop column if exists tg_offset;
+alter table public.guests drop column if exists tg_chat;
 
 create or replace function public.maroon_join_guest(
   p_id uuid,
@@ -64,6 +60,3 @@ begin
   );
 end;
 $$;
-
-revoke all on function public.maroon_join_guest(uuid, text, text, text, text) from public, anon, authenticated;
-grant execute on function public.maroon_join_guest(uuid, text, text, text, text) to service_role;

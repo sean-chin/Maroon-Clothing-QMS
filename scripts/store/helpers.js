@@ -24,7 +24,6 @@ function rowToGuest(row) {
     status: row.status,
     joinedAt: row.joined_at,
     calledAt: row.called_at,
-    tgChat: row.tg_chat,
     email: row.email,
     pushSub: row.push_sub,
     headsUpSent: row.heads_up_sent,
@@ -41,7 +40,6 @@ function guestToRow(g) {
     status: g.status,
     joined_at: g.joinedAt,
     called_at: g.calledAt,
-    tg_chat: g.tgChat,
     email: g.email,
     push_sub: g.pushSub,
     heads_up_sent: g.headsUpSent,
@@ -50,7 +48,7 @@ function guestToRow(g) {
 
 function normalizeState(raw) {
   if (!raw || typeof raw !== "object") {
-    return { seq: 0, guests: [], open: true, tgOffset: 0 };
+    return { seq: 0, guests: [], open: true };
   }
   const guests = Array.isArray(raw.guests) ? raw.guests : [];
   const normalized = [];
@@ -62,7 +60,6 @@ function normalizeState(raw) {
     seq: typeof raw.seq === "number" && raw.seq >= 0 ? raw.seq : 0,
     guests: normalized,
     open: raw.open !== false,
-    tgOffset: typeof raw.tgOffset === "number" && raw.tgOffset >= 0 ? raw.tgOffset : 0,
   };
 }
 

@@ -19,7 +19,7 @@ async function main() {
   const sb = createClient(url, key, { auth: { persistSession: false, autoRefreshToken: false } });
   const { data: settings, error: settingsErr } = await sb
     .from("queue_settings")
-    .select("id, seq, open, tg_offset")
+    .select("id, seq, open")
     .eq("id", 1)
     .maybeSingle();
   if (settingsErr) throw settingsErr;
@@ -31,15 +31,16 @@ async function main() {
     p_id: testId,
     p_token: testToken,
     p_name: "Verify Test",
+    p_phone: "91234567",
     p_email: null,
   });
   if (joinErr) throw joinErr;
   console.log("maroon_join_guest ok, number:", guest.number);
 
+  // Only remove the single test guest we just created. Never call
+  // maroon_reset_queue() here: this script can be run at any time, including
+  // during a live event, and a full reset would wipe every real guest.
   await sb.from("guests").delete().eq("id", testId);
-  await sb.rpc("maroon_reset_queue");
-  const offset = settings.tg_offset || 0;
-  await sb.from("queue_settings").update({ tg_offset: offset }).eq("id", 1);
   console.log("Cleanup ok. Supabase queue store is ready.");
 }
 

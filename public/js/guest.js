@@ -23,7 +23,6 @@
   let failStreak = 0;
 
   // Notification channels
-  let botUsername = "";
   let emailEnabled = false;
   let knownEmail = localStorage.getItem("maroonEmail") || "";
   let emailLinked = false;
@@ -227,13 +226,6 @@
   }
 
   function updateChannelRows(channels) {
-    if (botUsername && token) {
-      $("rowTelegram").hidden = false;
-      $("tgLink").href = "https://t.me/" + botUsername + "?start=" + token;
-      const linked = !!(channels && channels.telegram);
-      $("tgLink").hidden = linked;
-      $("tgState").hidden = !linked;
-    }
     if (channels) emailLinked = !!channels.email;
     updateEmailRow();
     reflectNotifPermission();
@@ -309,7 +301,6 @@
     try {
       const cfg = await request("/api/config", { retries: 2 });
       queueOpen = cfg.open;
-      botUsername = cfg.botUsername || "";
       emailEnabled = !!cfg.emailEnabled;
       vapidPublicKey = cfg.vapidPublicKey || "";
       $("eventCapacity").textContent = cfg.capacity;
@@ -318,6 +309,7 @@
         $("joinCard").hidden = true;
         $("closedCard").hidden = false;
       }
+      setConn(true);
     } catch {
       setConn(false);
     }

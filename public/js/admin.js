@@ -96,7 +96,7 @@
               const gold = g.number % 25 === 0 && g.number !== 0;
               return `<tr${gold ? ' class="gold-row"' : ""}>
         <td class="num">${g.number}${gold ? '<span class="gold-chip">Gold</span>' : ""}</td>
-        <td>${esc(g.name)}${g.push ? '<span class="chip" title="Gets push notifications">PUSH</span>' : ""}${g.telegram ? '<span class="chip" title="Gets Telegram pings">TG</span>' : ""}${g.email ? '<span class="chip" title="Gets email pings">@</span>' : ""}</td>
+        <td>${esc(g.name)}${g.push ? '<span class="chip" title="Gets push notifications">PUSH</span>' : ""}${g.email ? '<span class="chip" title="Gets email pings">@</span>' : ""}</td>
         <td>${esc(g.phone || "")}</td>
         <td><span class="pill ${g.status}">${g.status}</span></td>
         <td>${actions(g)}</td>

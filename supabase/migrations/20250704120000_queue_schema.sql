@@ -4,8 +4,7 @@
 create table if not exists public.queue_settings (
   id integer primary key default 1 check (id = 1),
   seq integer not null default 0,
-  open boolean not null default true,
-  tg_offset bigint not null default 0
+  open boolean not null default true
 );
 
 insert into public.queue_settings (id) values (1) on conflict (id) do nothing;
@@ -18,7 +17,6 @@ create table if not exists public.guests (
   status text not null default 'waiting',
   joined_at bigint not null,
   called_at bigint,
-  tg_chat bigint,
   email text,
   push_sub jsonb,
   heads_up_sent boolean not null default false,
@@ -83,7 +81,6 @@ begin
     'status', v_row.status,
     'joinedAt', v_row.joined_at,
     'calledAt', v_row.called_at,
-    'tgChat', v_row.tg_chat,
     'email', v_row.email,
     'pushSub', v_row.push_sub,
     'headsUpSent', v_row.heads_up_sent
@@ -140,7 +137,7 @@ begin
 end;
 $$;
 
--- Wipe queue for a fresh event day (keeps Telegram offset).
+-- Wipe queue for a fresh event day.
 create or replace function public.maroon_reset_queue()
 returns void
 language plpgsql
@@ -148,7 +145,10 @@ security definer
 set search_path = public
 as $$
 begin
-  delete from guests;
+  -- `where true` is required: Supabase's safeupdate guard (preloaded on the
+  -- authenticator role PostgREST/RPC uses) blocks DELETE/UPDATE without a
+  -- WHERE clause, even nested inside a SECURITY DEFINER function.
+  delete from guests where true;
   update queue_settings set seq = 0, open = true where id = 1;
 end;
 $$;
