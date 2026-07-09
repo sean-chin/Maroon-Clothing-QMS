@@ -52,8 +52,58 @@
       <label for="joinEmail">Email for alerts</label>
       <input type="email" id="joinEmail" maxlength="254" placeholder="you@somewhere.com" autocomplete="email" required>
     </div>
+    <div class="policy-notice">
+      <p class="policy-notice-title">Before you join, please note</p>
+      <ul>
+        <li>The Maroon team only arrives and begins queue service at <strong>9:00am</strong>. Maroon is not liable for anyone who queues before that time.</li>
+        <li><strong>One person, one queue number.</strong> Numbers cannot be shared. Every person in your group needs their own number.</li>
+        <li>Groups may move back to wait together. A number can never move forward using a friend's earlier number.</li>
+      </ul>
+      <a class="policy-notice-link" href="#queuePolicy">Read the full Queue Policy</a>
+    </div>
     <button type="button" id="joinBtn">Get my spot</button>
     <p class="error" id="joinError" role="alert"></p>
+  </section>
+
+  <section class="card policy-card" id="queuePolicy">
+    <h2 class="card-title">Queue Policy</h2>
+    <p class="lead left">
+      Please read this policy before joining the queue. By joining, you acknowledge and agree to the terms below.
+    </p>
+
+    <div class="policy-section">
+      <h3>1. Store opening time</h3>
+      <p>
+        The Maroon team begins queue operations at <strong>9:00am</strong> on each event day. No staff will be present at the venue before this time.
+        Maroon Clothing, Mandarin Gallery, and their staff and representatives accept no responsibility and no liability whatsoever for any person who
+        queues, waits, or is present at or near the venue before 9:00am, including but not limited to any injury, loss, theft, inconvenience, discomfort,
+        or exposure to weather or crowd conditions. Queuing before 9:00am is done entirely at your own risk.
+      </p>
+    </div>
+
+    <div class="policy-section">
+      <h3>2. One person, one queue number</h3>
+      <p>
+        Every individual joining the queue must hold their own unique queue number. A single queue number belongs to one person only and cannot be used,
+        shared, or presented on behalf of any other person, regardless of relationship. If you are queuing together with friends or family, each member
+        of your group must join the queue separately and be issued their own number. For example, a group of 4 people requires 4 separate queue numbers.
+        One member cannot queue, hold a number, or check in on behalf of the other 3.
+      </p>
+    </div>
+
+    <div class="policy-section">
+      <h3>3. Group queuing: moving back is allowed, moving forward is not</h3>
+      <p>
+        Members of a group may consolidate their position toward the back of the line only. A guest holding an earlier (lower) queue number may choose
+        to leave their position and join a friend who holds a later (higher) queue number, further back in the line. A guest holding a later (higher)
+        queue number is strictly prohibited from moving forward in the line by using, borrowing, or standing in on a friend's earlier (lower) queue
+        number. Each guest's place in line is determined solely by their own queue number.
+      </p>
+      <p>
+        Maroon staff reserve the right to verify identities and queue numbers at any point, and to refuse entry or void a queue number for anyone who
+        does not comply with this policy.
+      </p>
+    </div>
   </section>
 
   <section class="card card-muted" id="closedCard" hidden>
@@ -207,6 +257,7 @@
   <img class="footer-badge" src="assets/badge-oval.png" alt="">
   <span class="footer-brand">Maroon Clothing</span>
   <span class="footer-kicker">Wear the town.</span>
+  <a class="footer-link" href="#queuePolicy">Queue Policy</a>
 </footer>
 
 <script src="js/api.js"></script>
