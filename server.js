@@ -26,7 +26,7 @@ const store = require("./scripts/store");
 // ---------- config ----------
 const PORT = process.env.PORT || 3000;
 const ADMIN_PIN = process.env.ADMIN_PIN || "maroon2026";
-const STORE_CAPACITY = parseInt(process.env.STORE_CAPACITY || "40", 10);
+const STORE_CAPACITY = parseInt(process.env.STORE_CAPACITY || "30", 10);
 const GUESTS_PER_MINUTE = parseFloat(process.env.GUESTS_PER_MINUTE || "3");
 const ALMOST_AHEAD = parseInt(process.env.ALMOST_AHEAD || "25", 10);
 const ADVANCE_MINUTES = parseInt(process.env.ADVANCE_MINUTES || "3", 10);

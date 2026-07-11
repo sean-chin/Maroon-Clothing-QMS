@@ -6,7 +6,7 @@
   let isOpen = true;
   let refreshTimer = null;
   let refreshInFlight = false;
-  let capacity = 40;
+  let capacity = 30;
 
   function toast(msg, type) {
     const el = $("toast");
