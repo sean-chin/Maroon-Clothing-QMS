@@ -102,10 +102,8 @@ function slotsAvailable(inStoreCount, capacity) {
   return Math.max(0, capacity - inStoreCount);
 }
 
-function suggestedCallCount(waitingLen, calledLen, inStoreLen, capacity) {
-  const slots = slotsAvailable(inStoreLen, capacity);
-  const roomForCalled = Math.max(0, slots - calledLen);
-  return Math.min(waitingLen, roomForCalled);
+function suggestedCallCount(waitingLen) {
+  return waitingLen;
 }
 
 module.exports = {

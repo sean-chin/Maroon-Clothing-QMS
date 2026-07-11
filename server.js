@@ -27,8 +27,11 @@ const store = require("./scripts/store");
 const PORT = process.env.PORT || 3000;
 const ADMIN_PIN = process.env.ADMIN_PIN || "maroon2026";
 const STORE_CAPACITY = parseInt(process.env.STORE_CAPACITY || "40", 10);
-const GUESTS_PER_MINUTE = parseFloat(process.env.GUESTS_PER_MINUTE || "2");
-const ALMOST_AHEAD = parseInt(process.env.ALMOST_AHEAD || "10", 10);
+const GUESTS_PER_MINUTE = parseFloat(process.env.GUESTS_PER_MINUTE || "3");
+const ALMOST_AHEAD = parseInt(process.env.ALMOST_AHEAD || "25", 10);
+const ADVANCE_MINUTES = parseInt(process.env.ADVANCE_MINUTES || "3", 10);
+const HEADS_UP_SWEEP_MS = parseInt(process.env.HEADS_UP_SWEEP_MS || "20000", 10);
+const PUBLIC_URL = (process.env.PUBLIC_URL || "").replace(/\/$/, "");
 
 const SMTP_HOST = process.env.SMTP_HOST || "";
 const SMTP_PORT = parseInt(process.env.SMTP_PORT || "587", 10);
@@ -47,6 +50,12 @@ const sweepOpts = () => ({
   almostAhead: ALMOST_AHEAD,
   guestsPerMinute: GUESTS_PER_MINUTE,
   onNotify: (g) => notifyGuest(g, "headsUp"),
+});
+
+const statusOpts = () => ({
+  guestsPerMinute: GUESTS_PER_MINUTE,
+  almostAhead: ALMOST_AHEAD,
+  advanceMinutes: ADVANCE_MINUTES,
 });
 
 async function runSweep() {
@@ -103,10 +112,12 @@ const NOTIFY_COPY = {
   },
   headsUp: {
     headline: "You're almost up!",
-    body: () => "Start making your way back to Maroon, about 5 minutes to go.",
+    body: () =>
+      `Start making your way back to Maroon, about ${ADVANCE_MINUTES} minutes to go.`,
     text: () =>
-      "You're almost up! Start making your way back to Maroon, about 5 minutes to go.",
-    subject: (g) => `Almost your turn! About 5 minutes to go, number ${g.number}`,
+      `You're almost up! Start making your way back to Maroon, about ${ADVANCE_MINUTES} minutes to go.`,
+    subject: (g) =>
+      `Almost your turn! About ${ADVANCE_MINUTES} minutes to go, number ${g.number}`,
   },
   yourTurn: {
     headline: "It's your turn!",
@@ -225,7 +236,7 @@ app.get("/api/config", asyncRoute(async (_req, res) => {
     vapidPublicKey: PUSH_ENABLED ? VAPID_PUBLIC_KEY : "",
     open: await store.isOpen(),
     capacity: STORE_CAPACITY,
-    advanceMinutes: 5,
+    advanceMinutes: ADVANCE_MINUTES,
   });
 }));
 
@@ -270,10 +281,7 @@ app.get("/api/status/:token", rateLimit(60), asyncRoute(async (req, res) => {
   const guest = await store.findByToken(req.params.token);
   if (!guest) return res.status(404).json({ error: "Not found" });
   res.json(
-    await store.getStatusPayload(guest, {
-      guestsPerMinute: GUESTS_PER_MINUTE,
-      almostAhead: ALMOST_AHEAD,
-    })
+    await store.getStatusPayload(guest, statusOpts())
   );
 }));
 
@@ -339,14 +347,14 @@ app.get("/api/admin/state", requireAdmin, asyncRoute(async (_req, res) => {
 }));
 
 app.post("/api/admin/call-next", requireAdmin, asyncRoute(async (req, res) => {
-  const n = Math.min(Math.max(parseInt(req.body.count || "1", 10), 1), 50);
+  const n = Math.max(parseInt(req.body.count || "1", 10), 1);
   try {
-    const { called, numbers } = await store.callNext(n, STORE_CAPACITY);
+    const { called, numbers } = await store.callNext(n);
     for (const g of called) notifyGuest(g, "yourTurn");
     await runSweep();
     res.json({ called: numbers });
   } catch (e) {
-    if (e.code === "store_full") return res.status(409).json({ error: e.message });
+    if (e.code === "queue_empty") return res.status(409).json({ error: e.message });
     throw e;
   }
 }));
@@ -376,6 +384,29 @@ app.post("/api/admin/reset", requireAdmin, asyncRoute(async (_req, res) => {
   await runSweep();
   res.json({ ok: true });
 }));
+
+function guestJoinUrl(req) {
+  if (PUBLIC_URL) return PUBLIC_URL + "/";
+  const proto = req.get("x-forwarded-proto") || req.protocol || "https";
+  const host = req.get("x-forwarded-host") || req.get("host");
+  return `${proto}://${host}/`;
+}
+
+app.get("/api/admin/qr", requireAdmin, asyncRoute(async (req, res) => {
+  const QRCode = require("qrcode");
+  const url = guestJoinUrl(req);
+  const svg = await QRCode.toString(url, {
+    type: "svg",
+    margin: 2,
+    width: 512,
+    color: { dark: "#6a1f2a", light: "#ffffff" },
+  });
+  res.json({ url, svg });
+}));
+
+app.get("/qr", (_req, res) =>
+  res.sendFile(path.join(__dirname, "public", "qr.html"))
+);
 
 app.get("/admin", (_req, res) =>
   res.sendFile(path.join(__dirname, "public", "admin.html"))
@@ -411,6 +442,10 @@ async function boot() {
     );
   }
   console.log(`Queue persistence: ${store.backend}`);
+  if (HEADS_UP_SWEEP_MS > 0) {
+    setInterval(runSweep, HEADS_UP_SWEEP_MS).unref();
+    console.log(`Heads-up sweep every ${HEADS_UP_SWEEP_MS / 1000}s`);
+  }
 }
 
 module.exports = app;

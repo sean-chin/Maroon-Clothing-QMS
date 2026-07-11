@@ -117,7 +117,7 @@ async function updateGuest(guest) {
   save();
 }
 
-async function getStatusPayload(guest, { guestsPerMinute, almostAhead }) {
+async function getStatusPayload(guest, { guestsPerMinute, almostAhead, advanceMinutes }) {
   const { waiting, called } = getPartitions();
   const { ahead, estMinutes, aheadMax } = positionInfo(
     guest,
@@ -135,7 +135,7 @@ async function getStatusPayload(guest, { guestsPerMinute, almostAhead }) {
     ahead: phase === "waiting" || phase === "almost" ? ahead : 0,
     estMinutes: phase === "waiting" || phase === "almost" ? estMinutes : 0,
     aheadMax,
-    advanceMinutes: 5,
+    advanceMinutes,
     channels: { email: !!guest.email, push: !!guest.pushSub },
   };
 }
@@ -149,10 +149,7 @@ async function getAdminState(capacity) {
     open: state.open,
     capacity,
     slotsAvailable: slotsAvailable(inStore.length, capacity),
-    suggestedCall: Math.max(
-      0,
-      suggestedCallCount(waiting.length, called.length, inStore.length, capacity)
-    ),
+    suggestedCall: Math.max(0, suggestedCallCount(waiting.length)),
     counts: {
       waiting: waiting.length,
       called: called.length,
@@ -174,15 +171,14 @@ async function getAdminState(capacity) {
   };
 }
 
-async function callNext(count, capacity) {
-  const { waiting, called, inStore } = getPartitions();
-  const room = Math.max(0, slotsAvailable(inStore.length, capacity) - called.length);
-  if (room === 0) {
-    const err = new Error("Store is at capacity. Mark guests as left before calling more.");
-    err.code = "store_full";
+async function callNext(count) {
+  const { waiting } = getPartitions();
+  if (!waiting.length) {
+    const err = new Error("No one is waiting in the queue.");
+    err.code = "queue_empty";
     throw err;
   }
-  const toCall = waiting.sort((a, b) => a.number - b.number).slice(0, Math.min(count, room));
+  const toCall = waiting.sort((a, b) => a.number - b.number).slice(0, Math.min(count, waiting.length));
   const now = Date.now();
   for (const g of toCall) {
     g.status = "called";

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maroon Queue QR | Print</title>
+<link rel="stylesheet" href="style.css">
+<style>
+  body { text-align: center; padding: 24px 16px 48px; }
+  .print-card {
+    max-width: 420px;
+    margin: 0 auto;
+    padding: 28px 24px;
+    border: 2px solid var(--maroon, #6a1f2a);
+    border-radius: 12px;
+    background: #fff;
+  }
+  .print-card h1 {
+    font-size: 1.35rem;
+    color: var(--maroon, #6a1f2a);
+    margin: 0 0 8px;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+  .print-card p { margin: 0 0 16px; color: #444; }
+  #qrCanvas { margin: 12px auto; }
+  #qrCanvas canvas, #qrCanvas img { display: block; margin: 0 auto; }
+  .join-url { word-break: break-all; font-size: 0.85rem; color: #666; }
+  @media print {
+    body { padding: 0; }
+    .no-print { display: none !important; }
+    .print-card { border: none; box-shadow: none; }
+  }
+</style>
+</head>
+<body>
+  <div class="print-card">
+    <h1>Join the Maroon queue</h1>
+    <p>Scan with your phone camera to get in line.</p>
+    <div id="qrCanvas" aria-label="QR code"></div>
+    <p class="join-url" id="joinUrl"></p>
+    <p><strong>Paint the Town Maroon</strong><br>11 &amp; 12 July &middot; 1pm to 8pm</p>
+  </div>
+  <p class="no-print" style="margin-top:24px;">
+    <button type="button" onclick="window.print()">Print</button>
+  </p>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.4/build/qrcode.min.js"></script>
+  <script>
+    (function () {
+      const url = (window.location.origin || "") + "/";
+      document.getElementById("joinUrl").textContent = url;
+      QRCode.toCanvas(document.createElement("canvas"), url, {
+        width: 320,
+        margin: 2,
+        color: { dark: "#6a1f2a", light: "#ffffff" },
+      }, function (err, canvas) {
+        if (err) {
+          document.getElementById("qrCanvas").textContent = "Could not generate QR code.";
+          return;
+        }
+        document.getElementById("qrCanvas").appendChild(canvas);
+      });
+    })();
+  </script>
+</body>
+</html>

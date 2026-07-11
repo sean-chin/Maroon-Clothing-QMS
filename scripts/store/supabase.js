@@ -138,7 +138,7 @@ async function updateGuest(guest) {
   if (error) throw error;
 }
 
-async function getStatusPayload(guest, { guestsPerMinute, almostAhead }) {
+async function getStatusPayload(guest, { guestsPerMinute, almostAhead, advanceMinutes }) {
   const active = await loadActiveGuests();
   const { waiting, called } = partitionGuests(active);
   return {
@@ -161,7 +161,7 @@ async function getStatusPayload(guest, { guestsPerMinute, almostAhead }) {
         aheadMax,
       };
     })(),
-    advanceMinutes: 5,
+    advanceMinutes,
     channels: { email: !!guest.email, push: !!guest.pushSub },
   };
 }
@@ -178,10 +178,7 @@ async function getAdminState(capacity) {
     open: settings.open,
     capacity,
     slotsAvailable: slotsAvailable(inStore.length, capacity),
-    suggestedCall: Math.max(
-      0,
-      suggestedCallCount(waiting.length, called.length, inStore.length, capacity)
-    ),
+    suggestedCall: Math.max(0, suggestedCallCount(waiting.length)),
     counts: {
       waiting: waiting.length,
       called: called.length,
@@ -203,15 +200,14 @@ async function getAdminState(capacity) {
   };
 }
 
-async function callNext(count, capacity) {
+async function callNext(count) {
   const { data, error } = await client().rpc("maroon_call_next", {
     p_count: count,
-    p_capacity: capacity,
   });
   if (error) {
-    if (error.message.includes("store_full")) {
-      const err = new Error("Store is at capacity. Mark guests as left before calling more.");
-      err.code = "store_full";
+    if (error.message.includes("queue_empty")) {
+      const err = new Error("No one is waiting in the queue.");
+      err.code = "queue_empty";
       throw err;
     }
     throw error;

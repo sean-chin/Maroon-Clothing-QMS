@@ -76,12 +76,27 @@
       <p class="hint left" id="callHint">Loading</p>
       <div class="controls">
         <label for="callCount">How many</label>
-        <input type="number" id="callCount" value="5" min="1" max="50" inputmode="numeric">
+        <input type="number" id="callCount" value="5" min="1" inputmode="numeric">
         <button type="button" id="callBtn">Call next group</button>
         <button type="button" class="secondary warn" id="openBtn">Close new joins</button>
       </div>
-      <p class="hint left">Guests get an automatic <strong>5 minute heads-up</strong>, then a "your turn" ping on every channel they linked (browser, email). PUSH and @ chips below show who gets pinged remotely.</p>
+      <p class="hint left">Guests get an automatic <strong>heads-up</strong> when they're getting close, then a "your turn" ping on every channel they linked (browser, email). PUSH and @ chips below show who gets pinged remotely. You can call any number of guests at once — no capacity limit on call-ins.</p>
     </section>
+
+    <section class="card qr-card">
+      <h2 class="card-title left">Guest QR code</h2>
+      <p class="hint left">Print this at the store entrance for tomorrow. Reset the queue before each day for a fresh start.</p>
+      <div class="qr-wrap">
+        <div class="qr-box" id="qrBox" aria-label="QR code for guest join page"></div>
+        <div class="qr-meta">
+          <p class="hint left">Guests scan to join:</p>
+          <p class="qr-url" id="qrUrl"></p>
+          <div class="qr-actions">
+            <button type="button" class="secondary" id="qrPrintBtn">Open printable page</button>
+            <button type="button" class="secondary" id="qrRefreshBtn">Refresh QR</button>
+          </div>
+        </div>
+      </div>
 
     <section class="card table-card">
       <h2 class="card-title left">Who's in the queue</h2>

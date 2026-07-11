@@ -3,6 +3,7 @@
   const { request, sleep } = window.MaroonAPI;
 
   let token = localStorage.getItem("maroonToken");
+  let advanceMinutes = 3;
   let pollTimer = null;
   let pollInFlight = false;
   function phaseStorageKey() {
@@ -107,7 +108,8 @@
   const ALERT_COPY = {
     almost: {
       title: "You're almost up!",
-      body: "Start making your way back to Maroon, about 5 minutes to go.",
+      body: () =>
+        `Start making your way back to Maroon, about ${advanceMinutes} minutes to go.`,
     },
     yourTurn: {
       title: "It's your turn!",
@@ -162,15 +164,17 @@
   function pingDevice(kind) {
     const copy = ALERT_COPY[kind];
     if (!copy) return;
+    const body = typeof copy.body === "function" ? copy.body() : copy.body;
+    const title = copy.title;
     try {
       if ("Notification" in window && Notification.permission === "granted") {
-        const opts = { body: copy.body, icon: "assets/badge-oval.png", tag: "maroon-queue" };
+        const opts = { body, icon: "assets/badge-oval.png", tag: "maroon-queue" };
         // Android requires an active service worker to show notifications at
         // all; new Notification() throws there. Prefer the SW when we have one.
         if (swReg && swReg.showNotification) {
-          swReg.showNotification(copy.title, opts).catch((e) => console.error("Notification failed:", e));
+          swReg.showNotification(title, opts).catch((e) => console.error("Notification failed:", e));
         } else {
-          new Notification(copy.title, opts);
+          new Notification(title, opts);
         }
       }
     } catch (e) {
@@ -303,7 +307,10 @@
       queueOpen = cfg.open;
       emailEnabled = !!cfg.emailEnabled;
       vapidPublicKey = cfg.vapidPublicKey || "";
+      advanceMinutes = cfg.advanceMinutes || 3;
       $("eventCapacity").textContent = cfg.capacity;
+      const headsUpEl = $("headsUpMinutes");
+      if (headsUpEl) headsUpEl.textContent = String(advanceMinutes);
       $("joinEmailField").hidden = !emailEnabled;
       if (!cfg.open) {
         $("joinCard").hidden = true;
@@ -401,6 +408,11 @@
       }
 
       applyPhase(s.phase, s.channels);
+      if (s.advanceMinutes) advanceMinutes = s.advanceMinutes;
+      const advanceText = $("advanceText");
+      if (advanceText) {
+        advanceText.textContent = `Start making your way to Maroon. You've got about ${advanceMinutes} minutes.`;
+      }
       updateChannelRows(s.channels);
 
       if (s.phase === "done") {
@@ -435,7 +447,7 @@
   function startPolling() {
     stopPolling();
     pollOnce();
-    pollTimer = setInterval(pollOnce, 4000);
+    pollTimer = setInterval(pollOnce, 2000);
   }
 
   function stopPolling() {

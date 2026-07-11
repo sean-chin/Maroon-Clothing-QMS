@@ -76,12 +76,12 @@
 
       updateCapacityBar(s.counts.inStore, s.capacity);
 
-      const suggested = s.suggestedCall || 1;
-      $("callCount").value = suggested;
+      const suggested = s.suggestedCall || 0;
+      $("callCount").value = suggested || 1;
       $("callHint").textContent =
-        s.slotsAvailable > 0
-          ? `${s.slotsAvailable} spot${s.slotsAvailable === 1 ? "" : "s"} open. Suggested call: ${suggested}.`
-          : "Store is full. Mark guests as left before calling more.";
+        s.counts.waiting > 0
+          ? `${s.counts.waiting} waiting. Suggested call: ${suggested || 0} (no capacity limit).`
+          : "No one waiting to call in.";
 
       $("openBtn").textContent = isOpen ? "Close new joins" : "Reopen queue";
       $("openBtn").classList.toggle("warn", isOpen);
@@ -186,7 +186,8 @@
       $("pinCard").hidden = true;
       $("dash").hidden = false;
       await refresh();
-      refreshTimer = setInterval(refresh, 3000);
+      await loadQr();
+      refreshTimer = setInterval(refresh, 2000);
     } catch {
       $("pinError").textContent = "Wrong PIN. Try again.";
     } finally {
@@ -207,6 +208,22 @@
     toggle.setAttribute("aria-label", reveal ? "Hide PIN" : "Show PIN");
     input.focus();
   });
+
+  async function loadQr() {
+    const box = $("qrBox");
+    const urlEl = $("qrUrl");
+    if (!box) return;
+    try {
+      const r = await api("/api/admin/qr");
+      box.innerHTML = r.svg;
+      if (urlEl) urlEl.textContent = r.url;
+    } catch (e) {
+      box.innerHTML = `<p class="error">${esc(e.message || "Could not load QR")}</p>`;
+    }
+  }
+
+  $("qrPrintBtn")?.addEventListener("click", () => window.open("/qr", "_blank"));
+  $("qrRefreshBtn")?.addEventListener("click", loadQr);
 
   if (pin) {
     $("pin").value = pin;
