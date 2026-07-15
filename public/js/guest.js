@@ -415,7 +415,7 @@
     } catch (e) {
       failStreak += 1;
       setConn(false);
-      if (e.status === 404 || failStreak >= 8) {
+      if (e.status === 404) {
         stopPolling();
         localStorage.removeItem("maroonToken");
         token = null;
