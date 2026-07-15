@@ -334,11 +334,7 @@
       return;
     }
     const phone = ($("phone").value || "").trim();
-    if (!phone) {
-      $("joinError").textContent = "Drop your handphone number so we can reach you.";
-      return;
-    }
-    if (!/^\+?[\d\s-()]{8,20}$/.test(phone)) {
+    if (phone && !/^\+?[\d\s-()]{8,20}$/.test(phone)) {
       $("joinError").textContent = "That handphone number doesn't look right. Give it another go!";
       return;
     }

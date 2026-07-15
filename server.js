@@ -235,12 +235,14 @@ app.get("/api/config", asyncRoute(async (_req, res) => {
 app.post("/api/join", rateLimit(40), asyncRoute(async (req, res) => {
   const name = String(req.body.name || "").trim().slice(0, 60);
   if (!name) return res.status(400).json({ error: "Please enter your name." });
-  const phone = cleanPhone(req.body.phone);
-  if (!phone) {
-    const msg = String(req.body.phone || "").trim()
-      ? "That handphone number doesn't look right. Give it another go!"
-      : "Drop your handphone number so we can reach you.";
-    return res.status(400).json({ error: msg });
+  let phone = "";
+  const rawPhone = String(req.body.phone || "").trim();
+  if (rawPhone) {
+    const cleaned = cleanPhone(rawPhone);
+    if (!cleaned) {
+      return res.status(400).json({ error: "That handphone number doesn't look right. Give it another go!" });
+    }
+    phone = cleaned;
   }
   let email = null;
   if (EMAIL_ENABLED) {
